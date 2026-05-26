@@ -1,43 +1,67 @@
 import { useEffect, useState } from 'react'
 import api from '../api.js'
+import DataTable from '../components/DataTable.jsx'
+
+const ACTION_BADGES = {
+  PAYMENT_CREATED: 'ok',
+  PAYMENT_CREATED_ONLINE: 'info',
+  ANOMALY_DETECTED: 'danger',
+  LOGIN: 'neutral',
+}
 
 export default function AuditLogPage() {
   const [rows, setRows] = useState([])
-  const [q, setQ] = useState('')
+  const [loading, setLoading] = useState(true)
 
   async function load() {
-    const r = await api.get('/audit-logs/', { params: { search: q || undefined } })
-    setRows(r.data.results || r.data)
+    setLoading(true)
+    try {
+      const r = await api.get('/audit-logs/', { params: { page_size: 500 } })
+      setRows(r.data.results || r.data)
+    } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
-  useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t) }, [q])
+
+  const columns = [
+    { key: 'timestamp', label: 'Time', sortable: true, render: (a) => new Date(a.timestamp).toLocaleString() },
+    {
+      key: 'action', label: 'Action', sortable: true,
+      render: (a) => <span className={`badge ${ACTION_BADGES[a.action] || 'neutral'}`}>{a.action.replaceAll('_', ' ')}</span>,
+    },
+    { key: 'table_name', label: 'Table', sortable: true },
+    { key: 'record_id', label: 'Record', render: (a) => <code style={{ fontSize: 11 }}>{a.record_id?.slice(0, 8) || '—'}</code> },
+    { key: 'changed_by_name', label: 'User', sortable: true, render: (a) => a.changed_by_name || 'system' },
+    {
+      key: 'new_value', label: 'Details',
+      render: (a) => (
+        <code style={{ fontSize: 11, color: 'var(--muted)', maxWidth: 280, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {JSON.stringify(a.new_value) || '—'}
+        </code>
+      ),
+    },
+  ]
 
   return (
     <div>
-      <h1 style={{ marginTop: 0 }}>Audit Log</h1>
-      <div className="toolbar">
-        <input placeholder="Search action, table, record..." value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="page-header">
+        <div>
+          <h1>Audit Log</h1>
+          <div className="subtitle">{rows.length} event{rows.length === 1 ? '' : 's'} on file · immutable record of every state change.</div>
+        </div>
       </div>
-      <div className="card">
-        <table>
-          <thead>
-            <tr><th>Time</th><th>Action</th><th>Table</th><th>Record</th><th>User</th><th>Details</th></tr>
-          </thead>
-          <tbody>
-            {rows.map((a) => (
-              <tr key={a.id}>
-                <td>{new Date(a.timestamp).toLocaleString()}</td>
-                <td><span className={`badge ${a.action.includes('ANOMALY') ? 'danger' : 'ok'}`}>{a.action}</span></td>
-                <td>{a.table_name}</td>
-                <td><code style={{ fontSize: 12 }}>{a.record_id}</code></td>
-                <td>{a.changed_by_name || '-'}</td>
-                <td><code style={{ fontSize: 11, color: 'var(--muted)' }}>{JSON.stringify(a.new_value)}</code></td>
-              </tr>
-            ))}
-            {!rows.length && <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--muted)' }}>No audit entries.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+
+      <DataTable
+        rows={rows}
+        columns={columns}
+        loading={loading}
+        searchKeys={['action', 'table_name', 'record_id', 'changed_by_name']}
+        searchPlaceholder="Search action, table, user..."
+        emptyIcon="📋"
+        emptyTitle="No audit entries"
+        emptySubtitle="Audit events appear here as users interact with the system."
+        initialSort={{ key: 'timestamp', dir: 'desc' }}
+        pageSize={20}
+      />
     </div>
   )
 }

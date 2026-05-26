@@ -6,6 +6,7 @@ import StudentDetail from './pages/StudentDetail.jsx'
 import Payments from './pages/Payments.jsx'
 import Reports from './pages/Reports.jsx'
 import AuditLogPage from './pages/AuditLog.jsx'
+import Announcements from './pages/Announcements.jsx'
 import StaffLayout from './components/Layout.jsx'
 import StudentLayout from './components/StudentLayout.jsx'
 import PortalDashboard from './pages/portal/PortalDashboard.jsx'
@@ -41,18 +42,20 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<RoleHome />} />
 
-      {/* Staff side */}
+      {/* Staff */}
       <Route path="/staff" element={<StaffOnly><Dashboard /></StaffOnly>} />
       <Route path="/staff/students" element={<StaffOnly><Students /></StaffOnly>} />
       <Route path="/staff/students/:id" element={<StaffOnly><StudentDetail /></StaffOnly>} />
       <Route path="/staff/payments" element={<StaffOnly><Payments /></StaffOnly>} />
       <Route path="/staff/reports" element={<StaffOnly><Reports /></StaffOnly>} />
+      <Route path="/staff/announcements" element={<StaffOnly><Announcements /></StaffOnly>} />
       <Route path="/staff/audit" element={<StaffOnly><AuditLogPage /></StaffOnly>} />
 
       {/* Student portal */}
       <Route path="/portal" element={<StudentOnly><PortalDashboard /></StudentOnly>} />
       <Route path="/portal/payments" element={<StudentOnly><PortalPayments /></StudentOnly>} />
       <Route path="/portal/pay" element={<StudentOnly><PortalPay /></StudentOnly>} />
+      <Route path="/portal/announcements" element={<StudentOnly><Announcements /></StudentOnly>} />
       <Route path="/portal/settings" element={<StudentOnly><PortalSettings /></StudentOnly>} />
 
       <Route path="*" element={<Navigate to="/" />} />

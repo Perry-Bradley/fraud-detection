@@ -45,11 +45,11 @@ export default function PortalDashboard() {
       </div>
 
       {Number(bal.outstanding) > 0 && (
-        <div className="card" style={{ background: 'linear-gradient(135deg, #1e3a8a, #1e293b)', borderColor: 'var(--primary)' }}>
+        <div className="card card-highlight">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div>
               <h2 style={{ margin: 0 }}>Pay your fees online</h2>
-              <p style={{ color: 'var(--muted)', margin: '4px 0 0' }}>
+              <p style={{ margin: '4px 0 0', opacity: 0.85 }}>
                 Settle your {fmt(bal.outstanding)} FCFA balance via MTN MoMo or Orange Money.
               </p>
             </div>
@@ -60,12 +60,13 @@ export default function PortalDashboard() {
 
       <div className="card">
         <h2>Payment Progress</h2>
-        <div style={{ background: 'var(--panel-2)', borderRadius: 8, height: 22, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--surface-2)', borderRadius: 999, height: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
           <div style={{
             width: `${pct}%`,
             height: '100%',
             background: pct >= 100 ? 'var(--success)' : 'var(--primary)',
             transition: 'width .4s ease',
+            borderRadius: 999,
           }} />
         </div>
         <p style={{ color: 'var(--muted)', marginTop: 8 }}>

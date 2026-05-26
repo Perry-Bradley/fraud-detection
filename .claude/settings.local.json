@@ -3,7 +3,17 @@
     "allow": [
       "Bash(git config *)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(grep -E \"\\\\.\\(env|key|pem\\)$\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "PowerShell(Write-Host \"=== Test simple pull ===\" -ForegroundColor Cyan; docker pull hello-world 2>&1 | Select-Object -Last 5; Write-Host \"`n=== DNS test from inside docker WSL VM ===\" -ForegroundColor Cyan; wsl -d docker-desktop -- nslookup registry-1.docker.io 2>&1 | Select-Object -First 10; Write-Host \"`n=== Current resolv.conf inside docker-desktop ===\" -ForegroundColor Cyan; wsl -d docker-desktop -- cat /etc/resolv.conf 2>&1)",
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(wsl --shutdown)",
+      "PowerShell(Start-Process \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\")",
+      "Bash(mkdir -p apps/__TRACKED_VAR__/migrations)",
+      "Bash(touch apps/__TRACKED_VAR__/migrations/__init__.py)"
     ]
   }
 }

@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.analytics",
     "apps.portal",
+    "apps.notifications",
+    "apps.announcements",
 ]
 
 MIDDLEWARE = [

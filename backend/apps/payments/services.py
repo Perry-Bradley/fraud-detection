@@ -57,6 +57,18 @@ def promote_intent_to_payment(intent: PaymentIntent, raw_callback: dict | None =
             "is_stub": intent.is_stub,
         },
     )
+
+    # Notify the student of a successful payment
+    if intent.student.user_id:
+        from apps.notifications.models import notify
+        notify(
+            intent.student.user,
+            title="Payment received",
+            message=f"Receipt {payment.receipt_no} for {payment.amount} FCFA has been issued.",
+            kind="success",
+            link="/portal/payments",
+        )
+
     if is_anom:
         AuditLog.objects.create(
             action="ANOMALY_DETECTED",
@@ -65,6 +77,17 @@ def promote_intent_to_payment(intent: PaymentIntent, raw_callback: dict | None =
             changed_by=intent.initiated_by,
             new_value={"score": score, "amount": str(payment.amount)},
         )
+        # Fan out to all admins so they can investigate
+        from apps.accounts.models import User
+        from apps.notifications.models import notify
+        for admin in User.objects.filter(role=User.Role.ADMIN, is_active=True):
+            notify(
+                admin,
+                title="Suspicious payment flagged",
+                message=f"Receipt {payment.receipt_no} ({payment.amount} FCFA) was flagged by the fraud detector.",
+                kind="danger",
+                link="/staff/payments?is_anomalous=true",
+            )
 
     return payment
 

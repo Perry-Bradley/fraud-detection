@@ -17,7 +17,7 @@ print("DB unreachable", file=sys.stderr); sys.exit(1)
 PY
 
 echo "[entrypoint] Generating migrations (auto)..."
-python manage.py makemigrations --noinput
+python manage.py makemigrations accounts students fees payments audit analytics portal notifications announcements --noinput
 
 echo "[entrypoint] Applying migrations..."
 python manage.py migrate --noinput
