@@ -1,0 +1,52 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-postgres-pvc
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: {{ .Values.postgres.storage }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-postgres
+spec:
+  serviceName: {{ .Release.Name }}-postgres
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres, release: {{ .Release.Name }} }
+  template:
+    metadata:
+      labels: { app: postgres, release: {{ .Release.Name }} }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports: [{ containerPort: 5432 }]
+          envFrom:
+            - secretRef: { name: {{ .Release.Name }}-secrets }
+          env:
+            - name: POSTGRES_DB
+              valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-secrets, key: DB_NAME } }
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-secrets, key: DB_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ .Release.Name }}-secrets, key: DB_PASSWORD } }
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: {{ .Release.Name }}-postgres-pvc }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres
+spec:
+  selector: { app: postgres, release: {{ .Release.Name }} }
+  ports: [{ port: 5432, targetPort: 5432 }]
+{{- end }}

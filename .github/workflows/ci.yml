@@ -1,0 +1,163 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test-backend:
+    name: Backend (Django) tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: sms_user
+          POSTGRES_PASSWORD: sms_password
+          POSTGRES_DB: school_fees
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sms_user"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Migrate + test
+        working-directory: backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: sms_user
+          DB_PASSWORD: sms_password
+          DB_NAME: school_fees
+          DJANGO_SECRET_KEY: ci-secret
+          DJANGO_DEBUG: "False"
+        run: |
+          python manage.py migrate --noinput
+          python manage.py test
+
+  test-ml:
+    name: ML service tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: ml-service/requirements.txt
+
+      - name: Install
+        working-directory: ml-service
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run tests
+        working-directory: ml-service
+        run: pytest -q
+
+  test-frontend:
+    name: Frontend build + lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: frontend/package.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Build
+        working-directory: frontend
+        env:
+          VITE_API_URL: http://localhost:5000/api
+        run: npm run build
+
+  build-images:
+    name: Build & scan Docker images
+    needs: [test-backend, test-ml, test-frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: sms-backend:ci
+          load: true
+
+      - name: Build ml-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ml-service
+          push: false
+          tags: sms-ml:ci
+          load: true
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: sms-frontend:ci
+          load: true
+
+      - name: Trivy scan - backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: sms-backend:ci
+          format: sarif
+          output: trivy-backend.sarif
+          severity: CRITICAL,HIGH
+          exit-code: 0
+
+      - name: Trivy scan - ml
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: sms-ml:ci
+          format: sarif
+          output: trivy-ml.sarif
+          severity: CRITICAL,HIGH
+          exit-code: 0
+
+      - name: Upload Trivy SARIF (backend)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-backend.sarif
+          category: trivy-backend
+
+      - name: Upload Trivy SARIF (ml)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-ml.sarif
+          category: trivy-ml

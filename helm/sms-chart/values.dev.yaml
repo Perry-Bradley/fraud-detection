@@ -1,0 +1,14 @@
+image:
+  tag: dev
+
+backend:
+  replicas: 1
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: 250m, memory: 256Mi }
+
+frontend:
+  replicas: 1
+
+ingress:
+  host: sms.dev.local

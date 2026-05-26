@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-ml-service
+spec:
+  replicas: {{ .Values.mlService.replicas }}
+  selector:
+    matchLabels: { app: ml-service, release: {{ .Release.Name }} }
+  template:
+    metadata:
+      labels: { app: ml-service, release: {{ .Release.Name }} }
+    spec:
+      containers:
+        - name: ml-service
+          image: "{{ .Values.image.registry }}/{{ .Values.image.org }}/sms-ml-service:{{ .Values.image.tag }}"
+          ports: [{ containerPort: 8000 }]
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-ml-service
+spec:
+  selector: { app: ml-service, release: {{ .Release.Name }} }
+  ports: [{ port: 8000, targetPort: 8000 }]

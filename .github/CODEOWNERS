@@ -1,0 +1,10 @@
+# Default owners
+*       @sepo-dinga
+
+# Per-area
+/backend/      @sepo-dinga
+/frontend/     @sepo-dinga
+/ml-service/   @sepo-dinga
+/k8s/          @sepo-dinga
+/helm/         @sepo-dinga
+/.github/      @sepo-dinga

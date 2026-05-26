@@ -1,0 +1,8 @@
+apiVersion: v2
+name: sms-chart
+description: School Fees Management System - parent Helm chart
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Sepo Dinga

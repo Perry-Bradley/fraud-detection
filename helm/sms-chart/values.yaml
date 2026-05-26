@@ -1,0 +1,31 @@
+image:
+  registry: ghcr.io
+  org: your-org
+  tag: latest
+  pullPolicy: IfNotPresent
+
+backend:
+  replicas: 2
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+frontend:
+  replicas: 2
+
+mlService:
+  replicas: 1
+
+postgres:
+  enabled: true
+  storage: 5Gi
+
+redis:
+  enabled: true
+
+ingress:
+  enabled: true
+  host: sms.example.com
+  tlsSecret: sms-tls
+
+# Override per environment with -f values.dev.yaml etc.
