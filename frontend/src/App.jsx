@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Login from './pages/Login.jsx'
+import Landing from './pages/Landing.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Students from './pages/Students.jsx'
 import StudentDetail from './pages/StudentDetail.jsx'
@@ -23,9 +24,12 @@ import PortalPay from './pages/portal/PortalPay.jsx'
 import PortalSettings from './pages/portal/PortalSettings.jsx'
 import { useAuth } from './context/AuthContext.jsx'
 
-function RoleHome() {
-  const { user } = useAuth()
-  return <Navigate to={user?.role === 'student' ? '/portal' : '/staff'} replace />
+function Home() {
+  const { user, loading } = useAuth()
+  if (loading) return <div style={{ padding: 24 }}>Loading...</div>
+  // Logged-in users go to their dashboard; everyone else sees the landing page.
+  if (user) return <Navigate to={user.role === 'student' ? '/portal' : '/staff'} replace />
+  return <Landing />
 }
 
 function StaffOnly({ children }) {
@@ -48,7 +52,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={<RoleHome />} />
+      <Route path="/" element={<Home />} />
 
       {/* Staff */}
       <Route path="/staff" element={<StaffOnly><Dashboard /></StaffOnly>} />
