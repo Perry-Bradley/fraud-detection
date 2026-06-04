@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import api from '../api.js'
+import { openAuthedFile } from '../utils/files.js'
 
 const fmt = (n) => new Intl.NumberFormat('en-US').format(Math.round(n || 0))
 
@@ -45,7 +46,7 @@ export default function StudentDetail() {
                 <td>{p.method}</td>
                 <td>{p.reference || '-'}</td>
                 <td>{p.is_anomalous ? <span className="badge danger">Anomaly</span> : <span className="badge ok">OK</span>}</td>
-                <td><a href={`${api.defaults.baseURL}/payments/${p.id}/receipt/`} target="_blank" rel="noreferrer">PDF</a></td>
+                <td><a href="#" onClick={(e) => { e.preventDefault(); openAuthedFile(`/payments/${p.id}/receipt/`) }}>PDF</a></td>
               </tr>
             ))}
             {!pays.length && <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)' }}>No payments yet.</td></tr>}

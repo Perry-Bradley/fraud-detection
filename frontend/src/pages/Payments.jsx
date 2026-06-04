@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../api.js'
+import { openAuthedFile } from '../utils/files.js'
 import DataTable from '../components/DataTable.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 
@@ -49,7 +50,7 @@ export default function Payments() {
     {
       key: '_actions', label: '',
       render: (p) => (
-        <a href={`${api.defaults.baseURL}/payments/${p.id}/receipt/`} target="_blank" rel="noreferrer">
+        <a href="#" onClick={(e) => { e.preventDefault(); openAuthedFile(`/payments/${p.id}/receipt/`) }}>
           PDF
         </a>
       ),

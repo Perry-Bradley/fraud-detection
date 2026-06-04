@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import api from '../../api.js'
+import { openAuthedFile } from '../../utils/files.js'
 
 const fmt = (n) => new Intl.NumberFormat('en-US').format(Math.round(n || 0))
 
@@ -130,7 +131,7 @@ export default function PortalPayments() {
                       <td><span className="badge neutral">{p.method.replace('_', ' ')}</span></td>
                       <td>{p.reference || <span style={{ color: 'var(--muted)' }}>—</span>}</td>
                       <td>
-                        <a href={`${api.defaults.baseURL}/portal/payments/${p.id}/receipt/`} target="_blank" rel="noreferrer">
+                        <a href="#" onClick={(e) => { e.preventDefault(); openAuthedFile(`/portal/payments/${p.id}/receipt/`) }}>
                           PDF →
                         </a>
                       </td>
@@ -160,8 +161,8 @@ export default function PortalPayments() {
                 </div>
                 <div className="lc-side">
                   <a
-                    href={`${api.defaults.baseURL}/portal/payments/${p.id}/receipt/`}
-                    target="_blank" rel="noreferrer"
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); openAuthedFile(`/portal/payments/${p.id}/receipt/`) }}
                     className="btn ghost small"
                     style={{ textDecoration: 'none' }}
                   >

@@ -1,9 +1,11 @@
 name: Deploy
 
+# NOTE: Auto-deploy on push disabled — deploys go through Railway's GitHub
+# integration / CircleCI now, and GitHub Actions is billing-locked. Manual only.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+  # push:
+  #   branches: [main]
 
 env:
   REGISTRY: ghcr.io

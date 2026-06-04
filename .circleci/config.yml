@@ -18,6 +18,7 @@ jobs:
           POSTGRES_USER: sms_user
           POSTGRES_PASSWORD: sms_password
           POSTGRES_DB: school_fees
+      - image: cimg/redis:7.2
     working_directory: ~/repo
     steps:
       - checkout
@@ -40,10 +41,14 @@ jobs:
             DB_USER: sms_user
             DB_PASSWORD: sms_password
             DB_NAME: school_fees
+            REDIS_URL: redis://localhost:6379/0
             DJANGO_SECRET_KEY: ci-secret-key
             DJANGO_DEBUG: "False"
           command: |
             cd backend
+            # Migrations are generated at runtime (see entrypoint.sh), so build
+            # them here before migrating, otherwise CI has no tables to test on.
+            python manage.py makemigrations --noinput
             python manage.py migrate --noinput
             python manage.py test
 

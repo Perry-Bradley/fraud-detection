@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../../api.js'
+import { openAuthedFile } from '../../utils/files.js'
 
 const fmt = (n) => new Intl.NumberFormat('en-US').format(Math.round(n || 0))
 
@@ -152,7 +153,7 @@ export default function PortalDashboard() {
                       <td>{new Date(p.payment_date).toLocaleDateString()}</td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(p.amount)}</td>
                       <td><span className="badge neutral">{p.method.replace('_', ' ')}</span></td>
-                      <td><a href={`${api.defaults.baseURL}/portal/payments/${p.id}/receipt/`} target="_blank" rel="noreferrer">Receipt</a></td>
+                      <td><a href="#" onClick={(e) => { e.preventDefault(); openAuthedFile(`/portal/payments/${p.id}/receipt/`) }}>Receipt</a></td>
                     </tr>
                   ))}
                 </tbody>
@@ -174,8 +175,8 @@ export default function PortalDashboard() {
                   </div>
                   <div className="lc-side">
                     <a
-                      href={`${api.defaults.baseURL}/portal/payments/${p.id}/receipt/`}
-                      target="_blank" rel="noreferrer"
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); openAuthedFile(`/portal/payments/${p.id}/receipt/`) }}
                       style={{ fontSize: 12 }}
                     >
                       Receipt →

@@ -1,10 +1,14 @@
 name: CI
 
+# NOTE: Auto-triggers disabled — CI moved to CircleCI (.circleci/config.yml),
+# and GitHub Actions is billing-locked on this account. This workflow now only
+# runs when triggered manually. Re-enable by uncommenting the push/PR triggers.
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+  workflow_dispatch:
+  # push:
+  #   branches: [main, develop]
+  # pull_request:
+  #   branches: [main, develop]
 
 jobs:
   test-backend:

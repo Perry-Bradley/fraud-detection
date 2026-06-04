@@ -1,12 +1,15 @@
 name: CodeQL
 
+# NOTE: Auto-triggers disabled — GitHub Actions is billing-locked on this
+# account; CI/security scanning runs via CircleCI. Manual trigger only.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '0 6 * * 1'
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  # pull_request:
+  #   branches: [main]
+  # schedule:
+  #   - cron: '0 6 * * 1'
 
 jobs:
   analyze:
