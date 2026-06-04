@@ -48,8 +48,11 @@ else:
     print(f"Superuser {u} already exists.")
 PY
 
-echo "[entrypoint] Seeding demo data (idempotent)..."
-python manage.py seed_demo || true
+echo "[entrypoint] Seeding full demo data across all modules (idempotent)..."
+# seed_school also runs seed_demo (students/fees/payments) and seed_anomalies
+# (flagged payments), then fills in academics, timetable, exams, attendance,
+# admissions, HR and payroll.
+python manage.py seed_school || true
 
 echo "[entrypoint] Starting: $@"
 exec "$@"
