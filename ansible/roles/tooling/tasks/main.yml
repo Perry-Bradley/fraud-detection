@@ -1,0 +1,57 @@
+---
+# Ensure the CLIs needed to drive the cluster are present on the control host.
+# Linux (apt) control host / CI runner assumed; on Windows run this play from
+# WSL or a Linux CI runner.
+
+- name: Check for kubectl
+  ansible.builtin.command: kubectl version --client
+  register: kubectl_check
+  changed_when: false
+  failed_when: false
+
+- name: Install kubectl
+  become: true
+  ansible.builtin.shell: |
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+    rm -f kubectl
+  args:
+    creates: /usr/local/bin/kubectl
+  when: kubectl_check.rc != 0
+
+- name: Check for helm
+  ansible.builtin.command: helm version
+  register: helm_check
+  changed_when: false
+  failed_when: false
+
+- name: Install helm
+  become: true
+  ansible.builtin.shell: |
+    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+  when: helm_check.rc != 0
+
+- name: Check for doctl
+  ansible.builtin.command: doctl version
+  register: doctl_check
+  changed_when: false
+  failed_when: false
+
+- name: Install doctl
+  become: true
+  ansible.builtin.shell: |
+    DOCTL_VERSION=1.104.0
+    curl -sL "https://github.com/digitalocean/doctl/releases/download/v${DOCTL_VERSION}/doctl-${DOCTL_VERSION}-linux-amd64.tar.gz" | tar -xz
+    mv doctl /usr/local/bin/doctl
+  args:
+    creates: /usr/local/bin/doctl
+  when: doctl_check.rc != 0
+
+- name: Install python kubernetes client (used by kubernetes.core)
+  ansible.builtin.pip:
+    name:
+      - kubernetes>=29.0.0
+      - PyYAML>=6.0
+    extra_args: --user

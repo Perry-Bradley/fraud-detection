@@ -34,4 +34,6 @@ RUN useradd -m -u 1000 django && chown -R django:django /app
 USER django
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "sms_project.wsgi:application", "--bind", "0.0.0.0:5000", "--workers", "3", "--access-logfile", "-"]
+# Shell form so ${PORT} expands — PaaS platforms (Railway/Render) inject PORT.
+# Falls back to 5000 for local docker-compose.
+CMD gunicorn sms_project.wsgi:application --bind 0.0.0.0:${PORT:-5000} --workers 3 --access-logfile -

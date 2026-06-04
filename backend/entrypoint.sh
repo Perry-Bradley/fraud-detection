@@ -1,6 +1,13 @@
 #!/bin/sh
 set -e
 
+# Worker/beat containers share this image but must NOT run migrations/seed
+# (the web service owns that). Set SKIP_BOOTSTRAP=1 on those services.
+if [ "${SKIP_BOOTSTRAP:-0}" = "1" ]; then
+  echo "[entrypoint] SKIP_BOOTSTRAP=1 -> starting command without migrations/seed"
+  exec "$@"
+fi
+
 echo "[entrypoint] Waiting for database..."
 python - <<'PY'
 import os, time, sys, socket
@@ -17,7 +24,7 @@ print("DB unreachable", file=sys.stderr); sys.exit(1)
 PY
 
 echo "[entrypoint] Generating migrations (auto)..."
-python manage.py makemigrations accounts students fees payments audit analytics portal notifications announcements --noinput
+python manage.py makemigrations accounts students fees payments audit analytics portal notifications announcements academics attendance exams timetable admissions hr --noinput
 
 echo "[entrypoint] Applying migrations..."
 python manage.py migrate --noinput

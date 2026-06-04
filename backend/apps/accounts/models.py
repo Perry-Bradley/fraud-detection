@@ -6,6 +6,7 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = "admin", "Administrator"
         BURSARY = "bursary_staff", "Bursary Staff"
+        TEACHER = "teacher", "Teacher"
         VIEWER = "viewer", "Viewer"
         STUDENT = "student", "Student"
 
@@ -27,7 +28,21 @@ class User(AbstractUser):
     @property
     def is_staff_member(self) -> bool:
         """Anyone who can use the staff dashboard (excludes students)."""
-        return self.role in (self.Role.ADMIN, self.Role.BURSARY, self.Role.VIEWER)
+        return self.role in (
+            self.Role.ADMIN,
+            self.Role.BURSARY,
+            self.Role.TEACHER,
+            self.Role.VIEWER,
+        )
+
+    @property
+    def is_teacher(self) -> bool:
+        return self.role == self.Role.TEACHER
+
+    @property
+    def can_grade(self) -> bool:
+        """Teachers and admins may enter grades / mark attendance."""
+        return self.role in (self.Role.ADMIN, self.Role.TEACHER)
 
     @property
     def is_student(self) -> bool:

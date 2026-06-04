@@ -7,6 +7,14 @@ import Payments from './pages/Payments.jsx'
 import Reports from './pages/Reports.jsx'
 import AuditLogPage from './pages/AuditLog.jsx'
 import Announcements from './pages/Announcements.jsx'
+import Anomalies from './pages/Anomalies.jsx'
+import Timetable from './pages/Timetable.jsx'
+import Gradebook from './pages/Gradebook.jsx'
+import ReportCards from './pages/ReportCards.jsx'
+import Attendance from './pages/Attendance.jsx'
+import Exams from './pages/Exams.jsx'
+import Admissions from './pages/Admissions.jsx'
+import Staff from './pages/Staff.jsx'
 import StaffLayout from './components/Layout.jsx'
 import StudentLayout from './components/StudentLayout.jsx'
 import PortalDashboard from './pages/portal/PortalDashboard.jsx'
@@ -47,6 +55,14 @@ export default function App() {
       <Route path="/staff/students" element={<StaffOnly><Students /></StaffOnly>} />
       <Route path="/staff/students/:id" element={<StaffOnly><StudentDetail /></StaffOnly>} />
       <Route path="/staff/payments" element={<StaffOnly><Payments /></StaffOnly>} />
+      <Route path="/staff/anomalies" element={<StaffOnly><Anomalies /></StaffOnly>} />
+      <Route path="/staff/timetable" element={<StaffOnly><Timetable /></StaffOnly>} />
+      <Route path="/staff/gradebook" element={<StaffOnly><Gradebook /></StaffOnly>} />
+      <Route path="/staff/report-cards" element={<StaffOnly><ReportCards /></StaffOnly>} />
+      <Route path="/staff/attendance" element={<StaffOnly><Attendance /></StaffOnly>} />
+      <Route path="/staff/exams" element={<StaffOnly><Exams /></StaffOnly>} />
+      <Route path="/staff/admissions" element={<StaffOnly><Admissions /></StaffOnly>} />
+      <Route path="/staff/staff" element={<StaffOnly><Staff /></StaffOnly>} />
       <Route path="/staff/reports" element={<StaffOnly><Reports /></StaffOnly>} />
       <Route path="/staff/announcements" element={<StaffOnly><Announcements /></StaffOnly>} />
       <Route path="/staff/audit" element={<StaffOnly><AuditLogPage /></StaffOnly>} />

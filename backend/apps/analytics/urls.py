@@ -9,6 +9,7 @@ from .views import (
     ActivityFeedView,
     RecentPaymentsView,
     IntentFunnelView,
+    AnomalySummaryView,
 )
 
 urlpatterns = [
@@ -21,4 +22,5 @@ urlpatterns = [
     path("reports/activity-feed/", ActivityFeedView.as_view(), name="reports-activity"),
     path("reports/recent-payments/", RecentPaymentsView.as_view(), name="reports-recent"),
     path("reports/intent-funnel/", IntentFunnelView.as_view(), name="reports-intents"),
+    path("reports/anomaly-summary/", AnomalySummaryView.as_view(), name="reports-anomaly-summary"),
 ]

@@ -685,6 +685,233 @@ code {
 .toast.warn { border-left-color: var(--warn); }
 .toast.danger { border-left-color: var(--danger); }
 
+/* ============================================================
+   STUDENT PORTAL SPECIFIC
+   ============================================================ */
+
+/* Hero card with subtle gradient + avatar */
+.portal-hero {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 163, 74, 0.10), transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(217, 119, 6, 0.08), transparent 50%),
+    var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px 26px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.portal-hero .avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: var(--primary);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.25);
+}
+.portal-hero h1 {
+  font-size: 22px;
+  margin: 0;
+  font-weight: 700;
+}
+.portal-hero .meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.portal-hero .meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.portal-hero .meta-chip code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+/* Quick action chips */
+.quick-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.quick-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+  text-decoration: none;
+  transition: all .15s ease;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+.quick-action:hover {
+  border-color: var(--primary);
+  color: var(--primary-hover);
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.quick-action.primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.quick-action.primary:hover {
+  background: var(--primary-hover);
+  color: #fff;
+}
+.quick-action .qa-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.quick-action.primary .qa-icon {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* Big balance display */
+.balance-display {
+  text-align: center;
+  padding: 20px 0;
+}
+.balance-display .amount {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.balance-display .currency {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 6px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Mobile-friendly card list (alternative to table) */
+.card-list { display: flex; flex-direction: column; gap: 10px; }
+.list-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  transition: border-color .15s ease;
+}
+.list-card:hover { border-color: var(--border-strong); }
+.list-card .lc-main { flex: 1; min-width: 0; }
+.list-card .lc-title { font-weight: 600; margin-bottom: 4px; }
+.list-card .lc-subtitle { color: var(--muted); font-size: 12px; }
+.list-card .lc-side { text-align: right; flex-shrink: 0; }
+.list-card .lc-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.list-card .lc-meta {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+/* Operator picker (Pay Online) */
+.operator-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.operator-card {
+  cursor: pointer;
+  padding: 14px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  text-align: center;
+  transition: all .15s ease;
+  font-weight: 600;
+}
+.operator-card:hover { border-color: var(--border-strong); }
+.operator-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+}
+.operator-card .op-name { font-size: 14px; }
+.operator-card .op-desc { font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 400; }
+
+/* Status indicator pulse */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.status-pulse {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: var(--warn);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Mobile-only: hide on desktop */
+.mobile-only { display: none; }
+@media (max-width: 720px) {
+  .mobile-only { display: block; }
+  .desktop-only { display: none; }
+
+  .portal-hero { padding: 18px; gap: 12px; }
+  .portal-hero h1 { font-size: 18px; }
+  .portal-hero .avatar { width: 48px; height: 48px; font-size: 19px; border-radius: 12px; }
+  .balance-display .amount { font-size: 32px; }
+
+  .quick-actions {
+    padding-bottom: 6px;
+    margin-left: -14px;
+    margin-right: -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .quick-action { padding: 8px 12px; font-size: 12px; }
+  .quick-action .qa-icon { width: 24px; height: 24px; }
+
+  .operator-picker { grid-template-columns: 1fr; }
+}
+
 /* ---------- Scrollbar polish ---------- */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -1,0 +1,90 @@
+# Celery worker + beat for background payment reconciliation.
+# Same image as the backend; `command` overrides the migrate/seed entrypoint so
+# these pods run Celery directly (the backend Deployment owns migrations).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: sms
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: celery-worker }
+  template:
+    metadata:
+      labels: { app: celery-worker }
+    spec:
+      containers:
+        - name: celery-worker
+          image: ghcr.io/your-org/sms-backend:latest
+          command: ["celery", "-A", "sms_project", "worker", "-l", "info", "--concurrency", "2"]
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: ML_SERVICE_URL
+              value: http://ml-service:8000
+            - name: REDIS_URL
+              value: redis://redis:6379/0
+            - name: CELERY_BROKER_URL
+              value: redis://redis:6379/0
+            - name: DB_NAME
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: DB_NAME } }
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: DB_PASSWORD } }
+            - name: DJANGO_SECRET_KEY
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: DJANGO_SECRET_KEY } }
+            - name: JWT_SECRET
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: JWT_SECRET } }
+            - name: CAMPAY_API_KEY
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: CAMPAY_API_KEY, optional: true } }
+            - name: CAMPAY_WEBHOOK_SECRET
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: CAMPAY_WEBHOOK_SECRET, optional: true } }
+          resources:
+            requests: { cpu: "50m", memory: "192Mi" }
+            limits: { cpu: "300m", memory: "384Mi" }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  namespace: sms
+spec:
+  replicas: 1   # exactly one beat scheduler, never scale this up
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: celery-beat }
+  template:
+    metadata:
+      labels: { app: celery-beat }
+    spec:
+      containers:
+        - name: celery-beat
+          image: ghcr.io/your-org/sms-backend:latest
+          command: ["celery", "-A", "sms_project", "beat", "-l", "info"]
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: REDIS_URL
+              value: redis://redis:6379/0
+            - name: CELERY_BROKER_URL
+              value: redis://redis:6379/0
+            - name: DB_NAME
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: DB_NAME } }
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: DB_PASSWORD } }
+            - name: DJANGO_SECRET_KEY
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: DJANGO_SECRET_KEY } }
+            - name: JWT_SECRET
+              valueFrom: { secretKeyRef: { name: sms-secrets, key: JWT_SECRET } }
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits: { cpu: "200m", memory: "256Mi" }

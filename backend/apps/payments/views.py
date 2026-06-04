@@ -28,19 +28,31 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         payment = serializer.save(recorded_by=self.request.user)
-        is_anom, score = score_payment(payment)
+        is_anom, score, reason = score_payment(payment)
         if is_anom or score is not None:
             payment.is_anomalous = is_anom
             payment.anomaly_score = score
-            payment.save(update_fields=["is_anomalous", "anomaly_score"])
+            payment.anomaly_reason = reason
+            payment.save(update_fields=["is_anomalous", "anomaly_score", "anomaly_reason"])
             if is_anom:
                 AuditLog.objects.create(
                     action="ANOMALY_DETECTED",
                     table_name="payments",
                     record_id=str(payment.id),
                     changed_by=self.request.user,
-                    new_value={"score": score, "amount": str(payment.amount)},
+                    new_value={"score": score, "reason": reason, "amount": str(payment.amount)},
                 )
+                # Notify admins
+                from apps.accounts.models import User
+                from apps.notifications.models import notify
+                for admin in User.objects.filter(role=User.Role.ADMIN, is_active=True):
+                    notify(
+                        admin,
+                        title="Suspicious payment flagged",
+                        message=f"Receipt {payment.receipt_no} ({payment.amount} FCFA): {reason or 'unusual pattern'}",
+                        kind="danger",
+                        link="/staff/anomalies",
+                    )
         AuditLog.objects.create(
             action="PAYMENT_CREATED",
             table_name="payments",
@@ -68,6 +80,41 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if page is not None:
             return self.get_paginated_response(self.get_serializer(page, many=True).data)
         return Response(self.get_serializer(qs, many=True).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAdmin])
+    def review(self, request, pk=None):
+        """Admin reviews a flagged payment.
+
+        Body: { status: 'open'|'confirmed'|'dismissed'|'investigating', note: '...' }
+        """
+        from django.utils import timezone
+        from apps.audit.models import AuditLog
+
+        payment = self.get_object()
+        if not payment.is_anomalous:
+            return Response({"detail": "payment is not flagged"}, status=status.HTTP_400_BAD_REQUEST)
+
+        new_status = (request.data.get("status") or "").lower()
+        valid = [c[0] for c in Payment.ReviewStatus.choices]
+        if new_status not in valid:
+            return Response({"detail": f"status must be one of {valid}"}, status=400)
+
+        old = payment.review_status
+        payment.review_status = new_status
+        payment.reviewed_by = request.user
+        payment.reviewed_at = timezone.now()
+        payment.review_note = request.data.get("note", "")
+        payment.save(update_fields=["review_status", "reviewed_by", "reviewed_at", "review_note"])
+
+        AuditLog.objects.create(
+            action="ANOMALY_REVIEWED",
+            table_name="payments",
+            record_id=str(payment.id),
+            changed_by=request.user,
+            old_value={"review_status": old},
+            new_value={"review_status": new_status, "note": payment.review_note},
+        )
+        return Response(self.get_serializer(payment).data)
 
 
 class CampayWebhookView(APIView):

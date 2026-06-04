@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import path, include
@@ -39,4 +41,14 @@ urlpatterns = [
     path("api/", include("apps.portal.urls")),
     path("api/", include("apps.notifications.urls")),
     path("api/", include("apps.announcements.urls")),
+    path("api/", include("apps.academics.urls")),
+    path("api/", include("apps.attendance.urls")),
+    path("api/", include("apps.exams.urls")),
+    path("api/", include("apps.timetable.urls")),
+    path("api/", include("apps.admissions.urls")),
+    path("api/", include("apps.hr.urls")),
 ]
+
+# Serve uploaded media in development (in production an ingress/CDN handles this).
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

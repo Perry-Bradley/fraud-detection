@@ -23,6 +23,26 @@ class Payment(models.Model):
     recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     is_anomalous = models.BooleanField(default=False)
     anomaly_score = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    anomaly_reason = models.CharField(max_length=200, blank=True, default="")
+
+    # Anomaly review workflow
+    class ReviewStatus(models.TextChoices):
+        OPEN = "open", "Open (Awaiting Review)"
+        CONFIRMED = "confirmed", "Confirmed Fraud"
+        DISMISSED = "dismissed", "Dismissed (False Positive)"
+        INVESTIGATING = "investigating", "Under Investigation"
+
+    review_status = models.CharField(
+        max_length=20, choices=ReviewStatus.choices, default=ReviewStatus.OPEN,
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="reviewed_payments",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True, default="")
+
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

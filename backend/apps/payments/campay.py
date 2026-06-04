@@ -3,13 +3,18 @@
 Campay (https://campay.net) aggregates MTN MoMo and Orange Money in Cameroon.
 This client handles the collect (debit) flow:
 
-  1. POST /collect/        -> tells Campay to push a USSD prompt to the payer
-  2. Webhook               -> Campay calls our public webhook on result
-  3. (optional) GET /transaction/{ref}/  -> poll status as a fallback
+  1. POST /api/token/      -> exchange username/password for an access token
+                              (skipped if a permanent CAMPAY_API_KEY is set)
+  2. POST /api/collect/    -> tells Campay to push a USSD prompt to the payer
+  3. Webhook               -> Campay calls our public webhook on result
+  4. GET /api/transaction/{ref}/ -> poll status as a fallback (the Celery
+                              reconcile task uses this so payments still finalise
+                              even when no public webhook is reachable, e.g. local
+                              demos)
 
-Stub mode: when ``CAMPAY_API_KEY`` is empty, ``initiate_collect`` returns a
+Stub mode: when NO credentials are configured, ``initiate_collect`` returns a
 fake response so the system still works in demos. An admin endpoint can then
-simulate the webhook callback.
+simulate the callback.
 """
 from __future__ import annotations
 
@@ -22,8 +27,11 @@ from typing import Optional
 
 import requests
 from django.conf import settings
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
+
+_TOKEN_CACHE_KEY = "campay:access_token"
 
 
 @dataclass
@@ -33,6 +41,22 @@ class CollectResult:
     ussd_code: str
     status: str
     stub: bool = False
+
+
+def is_configured() -> bool:
+    """True when we have real credentials (permanent token OR username/password)."""
+    return bool(
+        settings.CAMPAY_API_KEY
+        or (settings.CAMPAY_USERNAME and settings.CAMPAY_PASSWORD)
+    )
+
+
+def _api(path: str) -> str:
+    """Build a Campay API URL, tolerating a base with or without a trailing /api."""
+    base = settings.CAMPAY_BASE_URL.rstrip("/")
+    if base.endswith("/api"):
+        base = base[:-4]
+    return f"{base}/api/{path.lstrip('/')}"
 
 
 def _normalize_phone(phone: str) -> str:
@@ -45,6 +69,40 @@ def _normalize_phone(phone: str) -> str:
     return p
 
 
+def _get_token() -> Optional[str]:
+    """Return a usable Campay access token, or None if unconfigured.
+
+    A permanent CAMPAY_API_KEY wins. Otherwise we exchange username/password at
+    /api/token/ and cache the result in Redis (Campay tokens are long-lived; we
+    refresh every 50 minutes to be safe).
+    """
+    if settings.CAMPAY_API_KEY:
+        return settings.CAMPAY_API_KEY
+    if not (settings.CAMPAY_USERNAME and settings.CAMPAY_PASSWORD):
+        return None
+
+    cached = cache.get(_TOKEN_CACHE_KEY)
+    if cached:
+        return cached
+    try:
+        r = requests.post(
+            _api("token/"),
+            json={
+                "username": settings.CAMPAY_USERNAME,
+                "password": settings.CAMPAY_PASSWORD,
+            },
+            timeout=15,
+        )
+        r.raise_for_status()
+        token = r.json().get("token")
+        if token:
+            cache.set(_TOKEN_CACHE_KEY, token, 60 * 50)
+        return token
+    except Exception as e:
+        logger.warning("[campay] token request failed: %s", e)
+        return None
+
+
 def initiate_collect(
     *,
     phone: str,
@@ -53,7 +111,8 @@ def initiate_collect(
     external_reference: str,
 ) -> CollectResult:
     """Ask Campay to debit the payer. Returns a reference we can correlate later."""
-    if not settings.CAMPAY_API_KEY:
+    token = _get_token()
+    if token is None:
         # Stub: pretend Campay accepted the request.
         logger.info("[campay] STUB collect: %s XAF from %s (ref=%s)", amount, phone, external_reference)
         return CollectResult(
@@ -64,9 +123,8 @@ def initiate_collect(
             stub=True,
         )
 
-    url = f"{settings.CAMPAY_BASE_URL.rstrip('/')}/collect/"
     headers = {
-        "Authorization": f"Token {settings.CAMPAY_API_KEY}",
+        "Authorization": f"Token {token}",
         "Content-Type": "application/json",
     }
     payload = {
@@ -76,7 +134,7 @@ def initiate_collect(
         "description": description,
         "external_reference": external_reference,
     }
-    r = requests.post(url, json=payload, headers=headers, timeout=15)
+    r = requests.post(_api("collect/"), json=payload, headers=headers, timeout=15)
     r.raise_for_status()
     data = r.json()
     return CollectResult(
@@ -89,12 +147,12 @@ def initiate_collect(
 
 def fetch_status(reference: str) -> Optional[dict]:
     """Poll Campay for the current status of a reference. Returns None on failure."""
-    if not settings.CAMPAY_API_KEY:
+    token = _get_token()
+    if token is None:
         return None
-    url = f"{settings.CAMPAY_BASE_URL.rstrip('/')}/transaction/{reference}/"
-    headers = {"Authorization": f"Token {settings.CAMPAY_API_KEY}"}
+    headers = {"Authorization": f"Token {token}"}
     try:
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(_api(f"transaction/{reference}/"), headers=headers, timeout=10)
         r.raise_for_status()
         return r.json()
     except Exception as e:

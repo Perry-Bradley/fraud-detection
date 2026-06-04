@@ -54,7 +54,7 @@ services:
       dockerfile: Dockerfile
     container_name: sms-backend
     restart: unless-stopped
-    environment:
+    environment: &backend-env
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-True}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
@@ -66,7 +66,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       ML_SERVICE_URL: ${ML_SERVICE_URL}
       REDIS_URL: ${REDIS_URL}
-      CAMPAY_BASE_URL: ${CAMPAY_BASE_URL:-https://demo.campay.net/api}
+      CAMPAY_BASE_URL: ${CAMPAY_BASE_URL:-https://demo.campay.net}
+      CAMPAY_USERNAME: ${CAMPAY_USERNAME:-}
+      CAMPAY_PASSWORD: ${CAMPAY_PASSWORD:-}
       CAMPAY_API_KEY: ${CAMPAY_API_KEY:-}
       CAMPAY_WEBHOOK_SECRET: ${CAMPAY_WEBHOOK_SECRET:-}
       DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-admin}
@@ -84,6 +86,42 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - sms-net
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sms-celery-worker
+    restart: unless-stopped
+    # Skip the backend's migrate/seed entrypoint — the backend owns that.
+    # Postgres is already healthy via depends_on before we start.
+    entrypoint: []
+    command: celery -A sms_project worker -l info --concurrency 2
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sms-net
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sms-celery-beat
+    restart: unless-stopped
+    entrypoint: []
+    command: celery -A sms_project beat -l info
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery-worker:
+        condition: service_started
     networks:
       - sms-net
 
@@ -143,12 +181,40 @@ services:
       - "3001:3000"
     depends_on:
       - prometheus
+      - loki
+    networks:
+      - sms-net
+
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: sms-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./infra/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - sms-net
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: sms-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./infra/loki/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
     networks:
       - sms-net
 
 volumes:
   pgdata:
   grafana-data:
+  loki-data:
 
 networks:
   sms-net:

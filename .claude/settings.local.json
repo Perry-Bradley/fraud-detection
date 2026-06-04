@@ -13,7 +13,25 @@
       "PowerShell(wsl --shutdown)",
       "PowerShell(Start-Process \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\")",
       "Bash(mkdir -p apps/__TRACKED_VAR__/migrations)",
-      "Bash(touch apps/__TRACKED_VAR__/migrations/__init__.py)"
+      "Bash(touch apps/__TRACKED_VAR__/migrations/__init__.py)",
+      "Bash(python -m py_compile backend/sms_project/celery.py backend/sms_project/__init__.py backend/sms_project/settings.py backend/apps/payments/tasks.py)",
+      "Bash(docker compose *)",
+      "Bash(echo \"---exit:$?---\")",
+      "Bash(python -m py_compile backend/apps/academics/models.py backend/apps/academics/serializers.py backend/apps/academics/views.py backend/apps/academics/urls.py backend/apps/academics/reportcards.py backend/apps/academics/admin.py backend/apps/accounts/models.py backend/apps/accounts/permissions.py)",
+      "Bash(python -m py_compile backend/apps/attendance/*.py backend/apps/exams/*.py backend/apps/timetable/*.py)",
+      "Bash(python -m py_compile backend/apps/admissions/*.py backend/apps/hr/*.py backend/sms_project/urls.py backend/sms_project/settings.py)",
+      "Bash(python -c \"import django; print\\('django', django.get_version\\(\\)\\)\")",
+      "Bash(python -m venv .tmp_check)",
+      "Bash(.tmp_check/Scripts/python -m pip install -q -r backend/requirements.txt)",
+      "Bash(.tmp_check/Scripts/python backend/manage.py check)",
+      "Bash(.tmp_check/Scripts/python backend/manage.py makemigrations --check --dry-run)",
+      "Bash(.tmp_check/Scripts/python -m pip install --timeout 180 --retries 6 -q -r backend/requirements.txt)",
+      "Bash(python -m py_compile backend/apps/academics/reportcards.py backend/apps/academics/views.py backend/apps/academics/urls.py)",
+      "Bash(git check-ignore *)",
+      "Bash(python -m py_compile backend/apps/payments/campay.py backend/sms_project/settings.py)",
+      "Bash(echo \"compose-exit:$?\")",
+      "Bash(echo \"exit:$?\")",
+      "Bash(curl -s -o nul -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/)"
     ]
   }
 }

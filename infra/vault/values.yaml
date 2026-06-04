@@ -1,0 +1,34 @@
+# Helm values for the official HashiCorp Vault chart.
+# Install: helm repo add hashicorp https://helm.releases.hashicorp.com
+#          helm install vault hashicorp/vault -n vault --create-namespace -f infra/vault/values.yaml
+#
+# NOTE: "standalone" + file storage keeps a single-node Vault affordable for a
+# student cluster. For production move to "ha" mode with integrated (raft) storage
+# and real auto-unseal (e.g. cloud KMS).
+
+server:
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+      listener "tcp" {
+        address     = "0.0.0.0:8200"
+        tls_disable = 1
+      }
+      storage "file" {
+        path = "/vault/data"
+      }
+  dataStorage:
+    enabled: true
+    size: 1Gi
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { cpu: 250m, memory: 256Mi }
+
+ui:
+  enabled: true
+
+# The injector mutates app pods so secrets are mounted from Vault at runtime
+# instead of living in Kubernetes Secret objects.
+injector:
+  enabled: true

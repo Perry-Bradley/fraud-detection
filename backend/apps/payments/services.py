@@ -36,11 +36,12 @@ def promote_intent_to_payment(intent: PaymentIntent, raw_callback: dict | None =
     intent.save(update_fields=["status", "payment", "raw_callback", "updated_at"])
 
     # Run anomaly detection (fails open if ML service is down)
-    is_anom, score = score_payment(payment)
+    is_anom, score, reason = score_payment(payment)
     if is_anom or score is not None:
         payment.is_anomalous = is_anom
         payment.anomaly_score = score
-        payment.save(update_fields=["is_anomalous", "anomaly_score"])
+        payment.anomaly_reason = reason
+        payment.save(update_fields=["is_anomalous", "anomaly_score", "anomaly_reason"])
 
     # Audit trail
     from apps.audit.models import AuditLog

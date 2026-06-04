@@ -1,0 +1,56 @@
+---
+# Deploy the SMS application onto the cluster the kubeconfig currently targets.
+
+- name: Ensure application namespace exists
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ kube_namespace }}"
+    state: present
+
+- name: Create/refresh application secrets from environment
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: sms-secrets
+        namespace: "{{ kube_namespace }}"
+      type: Opaque
+      stringData:
+        DB_NAME: "{{ lookup('env', 'DB_NAME') | default('school_fees', true) }}"
+        DB_USER: "{{ lookup('env', 'DB_USER') | default('sms_user', true) }}"
+        DB_PASSWORD: "{{ lookup('env', 'DB_PASSWORD') | default('changeme', true) }}"
+        DJANGO_SECRET_KEY: "{{ lookup('env', 'DJANGO_SECRET_KEY') | default('changeme', true) }}"
+        JWT_SECRET: "{{ lookup('env', 'JWT_SECRET') | default('changeme', true) }}"
+  no_log: true
+
+# -- Argo CD path (GitOps): register the app, Argo CD pulls & syncs it --------
+- name: Register the SMS application with Argo CD
+  kubernetes.core.k8s:
+    state: present
+    namespace: argocd
+    src: "../argocd/application.yml"
+  when: manage_argocd | bool
+
+# -- Helm path: useful for the very first bootstrap or non-GitOps installs -----
+- name: Deploy SMS via Helm (bootstrap / fallback)
+  kubernetes.core.helm:
+    name: "{{ app_name }}"
+    chart_ref: "{{ helm_chart_path }}"
+    release_namespace: "{{ kube_namespace }}"
+    create_namespace: true
+    values_files:
+      - "{{ helm_values_file }}"
+    values:
+      image:
+        tag: "{{ image_tag }}"
+    wait: true
+  when: not (manage_argocd | bool)
+
+- name: Show rollout status
+  ansible.builtin.command: >
+    kubectl rollout status deployment/backend -n {{ kube_namespace }} --timeout=120s
+  changed_when: false
+  failed_when: false

@@ -17,10 +17,16 @@ RUN npm run build
 # --- Runtime ---
 FROM nginx:alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Put the config in /etc/nginx/templates so the nginx image's envsubst step
+# renders ${PORT} at startup. PORT defaults to 80 (local docker-compose) and is
+# overridden by the PaaS (Railway/Render) at runtime.
+ENV PORT=80
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
+# Use 127.0.0.1 (IPv4) — "localhost" resolves to IPv6 ::1 first inside the
+# container, which would falsely report unhealthy.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+    CMD wget --quiet --tries=1 --spider http://127.0.0.1:${PORT:-80}/ || exit 1

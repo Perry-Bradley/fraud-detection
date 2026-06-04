@@ -1,0 +1,20 @@
+---
+# Top-level playbook: install the toolchain on the control host, then deploy
+# the SMS application to the Kubernetes cluster via Helm + Argo CD.
+#
+#   ansible-galaxy collection install -r requirements.yml
+#   ansible-playbook site.yml
+#
+# Re-runnable (idempotent) — safe to apply repeatedly.
+
+- name: Prepare control host tooling
+  hosts: control
+  gather_facts: true
+  roles:
+    - role: tooling          # kubectl, helm, doctl, python deps
+
+- name: Deploy SMS platform & application
+  hosts: control
+  gather_facts: false
+  roles:
+    - role: kubernetes_app   # namespace, secrets, Helm release, Argo CD app

@@ -1,0 +1,22 @@
+---
+# Shared variables for all plays. Override on the CLI with -e.
+
+app_name: sms
+kube_namespace: sms
+
+# Git source of truth used by Argo CD.
+git_repo_url: "https://github.com/Perry-Bradley/SMS418.git"
+git_target_revision: main
+
+# Helm chart in this repo.
+helm_chart_path: "../helm/sms-chart"
+helm_values_file: "../helm/sms-chart/values.yaml"
+
+# Container image registry (from Terraform output `registry_endpoint`).
+registry: "registry.digitalocean.com/sms-registry"
+image_tag: latest
+
+# Toggle which platform add-ons Ansible should ensure are present.
+manage_argocd: true
+manage_vault: true
+manage_loki: true

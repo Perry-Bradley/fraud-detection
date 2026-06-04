@@ -48,6 +48,12 @@ INSTALLED_APPS = [
     "apps.portal",
     "apps.notifications",
     "apps.announcements",
+    "apps.academics",
+    "apps.attendance",
+    "apps.exams",
+    "apps.timetable",
+    "apps.admissions",
+    "apps.hr",
 ]
 
 MIDDLEWARE = [
@@ -97,6 +103,17 @@ DATABASES = {
         "CONN_MAX_AGE": 60,
     }
 }
+
+# Managed hosts (Railway/Render/Heroku) expose a single DATABASE_URL. If present
+# it wins over the individual DB_* vars above. We keep the django_prometheus
+# engine so DB metrics still flow.
+_DATABASE_URL = env("DATABASE_URL", "")
+if _DATABASE_URL:
+    import dj_database_url
+    DATABASES["default"] = dj_database_url.parse(
+        _DATABASE_URL, conn_max_age=60, ssl_require=env_bool("DB_SSL_REQUIRE", False)
+    )
+    DATABASES["default"]["ENGINE"] = "django_prometheus.db.backends.postgresql"
 
 # ---------- Cache (Redis) ----------
 CACHES = {
@@ -153,6 +170,20 @@ SPECTACULAR_SETTINGS = {
 CORS_ALLOW_ALL_ORIGINS = True  # tighten in production
 CORS_ALLOW_CREDENTIALS = True
 
+# ---------- Production / behind-a-proxy (Railway, Render, etc.) ----------
+# Comma-separated https origins that may submit forms / use the Django admin,
+# e.g. "https://sms-backend.up.railway.app,https://sms.example.com"
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in env("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
+# The PaaS terminates TLS and forwards as http; trust its forwarded-proto header
+# so request.is_secure() and secure cookies work without redirect loops.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+# Only force-secure cookies when not in DEBUG (so local http still works).
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
 # ---------- I18N ----------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Africa/Douala"
@@ -164,19 +195,52 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# ---------- Media (uploaded files, e.g. admission documents) ----------
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ---------- Celery (background + scheduled tasks) ----------
+# Broker/result backend default to the same Redis the cache uses.
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", env("REDIS_URL", "redis://redis:6379/0"))
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 120  # hard kill a task after 2 min
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# How long a PaymentIntent may stay pending before we expire it (minutes).
+PAYMENT_INTENT_EXPIRY_MINUTES = int(env("PAYMENT_INTENT_EXPIRY_MINUTES", "30"))
+
+# Scheduled tasks (Celery Beat).
+CELERY_BEAT_SCHEDULE = {
+    "reconcile-pending-payments": {
+        "task": "apps.payments.tasks.reconcile_pending_intents",
+        "schedule": 60.0,  # every 60 seconds
+    },
+    "expire-stale-payment-intents": {
+        "task": "apps.payments.tasks.expire_stale_intents",
+        "schedule": 300.0,  # every 5 minutes
+    },
+}
 
 # ---------- External services ----------
 ML_SERVICE_URL = env("ML_SERVICE_URL", "http://ml-service:8000")
 
 # ---------- Campay (mobile money) ----------
-# Sandbox base: https://demo.campay.net/api  (production: https://campay.net/api)
-CAMPAY_BASE_URL = env("CAMPAY_BASE_URL", "https://demo.campay.net/api")
+# Sandbox base: https://demo.campay.net  (production: https://www.campay.net)
+# Two ways to authenticate, in priority order:
+#   1. CAMPAY_API_KEY  — a permanent app access token from the dashboard.
+#   2. CAMPAY_USERNAME + CAMPAY_PASSWORD — app credentials; the client exchanges
+#      them at /api/token/ for a short-lived token (cached in Redis).
+# If NONE are set we run in stub mode: a PaymentIntent is created but no external
+# call is made, and an admin can /api/payments/payment-intents/{id}/simulate/.
+CAMPAY_BASE_URL = env("CAMPAY_BASE_URL", "https://demo.campay.net")
 CAMPAY_API_KEY = env("CAMPAY_API_KEY", "")
+CAMPAY_USERNAME = env("CAMPAY_USERNAME", "")
+CAMPAY_PASSWORD = env("CAMPAY_PASSWORD", "")
 CAMPAY_WEBHOOK_SECRET = env("CAMPAY_WEBHOOK_SECRET", "")
-# When CAMPAY_API_KEY is empty we run in stub mode: payments still create a
-# PaymentIntent but no external HTTP call is made. An admin can call
-# /api/payments/intents/{id}/simulate/ to drive the flow end-to-end for demos.
 
 # ---------- Logging (structured) ----------
 LOGGING = {

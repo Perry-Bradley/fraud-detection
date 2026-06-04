@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+# Prefer exporting the token instead: $env:TF_VAR_do_token = "dop_v1_..."
+
+# do_token     = "dop_v1_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+environment  = "dev"
+region       = "fra1"
+cluster_name = "sms-cluster"
+k8s_version  = "1.30.1-do.0"
+node_size    = "s-2vcpu-4gb"
+node_count   = 2
+
+install_argocd = true
+install_vault  = true
+install_loki   = true

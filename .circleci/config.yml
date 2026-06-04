@@ -1,0 +1,111 @@
+# CircleCI pipeline for the School Management System.
+# CI: test backend + ml-service, build the frontend.
+# CD: deploy to Railway on pushes to main (optional — see deploy job notes).
+#
+# Setup:
+#   1. Sign in at https://app.circleci.com with your GitHub account and
+#      "Set Up Project" for this repo.
+#   2. For the deploy job, add a project env var RAILWAY_TOKEN
+#      (Railway dashboard -> Project Settings -> Tokens -> create a project token).
+version: 2.1
+
+jobs:
+  backend-tests:
+    docker:
+      - image: cimg/python:3.11
+      - image: cimg/postgres:15.4
+        environment:
+          POSTGRES_USER: sms_user
+          POSTGRES_PASSWORD: sms_password
+          POSTGRES_DB: school_fees
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: pip install -r backend/requirements.txt
+      - run:
+          name: Wait for Postgres
+          command: |
+            for i in $(seq 1 30); do
+              nc -z localhost 5432 && echo "postgres up" && exit 0
+              sleep 1
+            done
+            echo "postgres did not start" && exit 1
+      - run:
+          name: Migrate + test
+          environment:
+            DB_HOST: localhost
+            DB_PORT: "5432"
+            DB_USER: sms_user
+            DB_PASSWORD: sms_password
+            DB_NAME: school_fees
+            DJANGO_SECRET_KEY: ci-secret-key
+            DJANGO_DEBUG: "False"
+          command: |
+            cd backend
+            python manage.py migrate --noinput
+            python manage.py test
+
+  ml-tests:
+    docker:
+      - image: cimg/python:3.11
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            pip install -r ml-service/requirements.txt
+            pip install pytest
+      - run:
+          name: Run tests
+          command: cd ml-service && pytest -q
+
+  frontend-build:
+    docker:
+      - image: cimg/node:18.20
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install + build
+          environment:
+            VITE_API_URL: http://localhost:5000/api
+          command: |
+            cd frontend
+            npm install --no-audit --no-fund
+            npm run build
+
+  deploy:
+    docker:
+      - image: cimg/node:18.20
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install Railway CLI
+          command: npm i -g @railway/cli
+      - run:
+          name: Deploy services to Railway
+          # RAILWAY_TOKEN (a project token) must be set as a CircleCI env var.
+          # Each service is deployed from its configured root directory.
+          command: |
+            railway up --service sms-backend --ci
+            railway up --service sms-ml --ci
+            railway up --service sms-frontend --ci
+
+workflows:
+  ci-cd:
+    jobs:
+      - backend-tests
+      - ml-tests
+      - frontend-build
+      - deploy:
+          requires:
+            - backend-tests
+            - ml-tests
+            - frontend-build
+          filters:
+            branches:
+              only: main

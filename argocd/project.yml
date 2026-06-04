@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: sms
+  namespace: argocd
+spec:
+  description: School Fees Management System
+  sourceRepos:
+    - https://github.com/Perry-Bradley/SMS418.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: sms
+    - server: https://kubernetes.default.svc
+      namespace: logging
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

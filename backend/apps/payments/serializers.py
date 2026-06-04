@@ -26,6 +26,11 @@ class PaymentSerializer(serializers.ModelSerializer):
             "recorded_by_name",
             "is_anomalous",
             "anomaly_score",
+            "anomaly_reason",
+            "review_status",
+            "reviewed_by",
+            "reviewed_at",
+            "review_note",
             "notes",
             "created_at",
         )
@@ -36,6 +41,9 @@ class PaymentSerializer(serializers.ModelSerializer):
             "recorded_by",
             "is_anomalous",
             "anomaly_score",
+            "anomaly_reason",
+            "reviewed_by",
+            "reviewed_at",
             "created_at",
         )
 

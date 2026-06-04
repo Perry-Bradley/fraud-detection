@@ -1,14 +1,13 @@
 """Bridge to the FastAPI ML service for anomaly detection."""
 import logging
-from decimal import Decimal
 from django.conf import settings
 import requests
 
 logger = logging.getLogger(__name__)
 
 
-def score_payment(payment) -> tuple[bool, float | None]:
-    """Returns (is_anomalous, score). Fails open on network errors."""
+def score_payment(payment) -> tuple[bool, float | None, str]:
+    """Returns (is_anomalous, score, reason). Fails open on network errors."""
     try:
         history = list(
             payment.student.payments.exclude(pk=payment.pk).order_by("-payment_date")[:50]
@@ -34,7 +33,11 @@ def score_payment(payment) -> tuple[bool, float | None]:
         )
         r.raise_for_status()
         data = r.json()
-        return bool(data.get("is_anomalous", False)), float(data.get("score", 0.0))
+        return (
+            bool(data.get("is_anomalous", False)),
+            float(data.get("score", 0.0)),
+            str(data.get("reason") or ""),
+        )
     except Exception as e:
         logger.warning("Anomaly detection unavailable: %s", e)
-        return False, None
+        return False, None, ""
