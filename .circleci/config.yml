@@ -46,9 +46,8 @@ jobs:
             DJANGO_DEBUG: "False"
           command: |
             cd backend
-            # Migrations are generated at runtime (see entrypoint.sh), so build
-            # them here before migrating, otherwise CI has no tables to test on.
-            python manage.py makemigrations --noinput
+            # Fail the build if a model changed without a committed migration.
+            python manage.py makemigrations --check --dry-run
             python manage.py migrate --noinput
             python manage.py test
 

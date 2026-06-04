@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Login from './pages/Login.jsx'
+import Signup from './pages/Signup.jsx'
 import Landing from './pages/Landing.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Students from './pages/Students.jsx'
@@ -16,12 +17,16 @@ import Attendance from './pages/Attendance.jsx'
 import Exams from './pages/Exams.jsx'
 import Admissions from './pages/Admissions.jsx'
 import Staff from './pages/Staff.jsx'
+import Payroll from './pages/Payroll.jsx'
 import StaffLayout from './components/Layout.jsx'
 import StudentLayout from './components/StudentLayout.jsx'
 import PortalDashboard from './pages/portal/PortalDashboard.jsx'
 import PortalPayments from './pages/portal/PortalPayments.jsx'
 import PortalPay from './pages/portal/PortalPay.jsx'
 import PortalSettings from './pages/portal/PortalSettings.jsx'
+import PortalTimetable from './pages/portal/PortalTimetable.jsx'
+import PortalCourses from './pages/portal/PortalCourses.jsx'
+import PortalResults from './pages/portal/PortalResults.jsx'
 import { useAuth } from './context/AuthContext.jsx'
 
 function Home() {
@@ -52,6 +57,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="/" element={<Home />} />
 
       {/* Staff */}
@@ -67,6 +73,7 @@ export default function App() {
       <Route path="/staff/exams" element={<StaffOnly><Exams /></StaffOnly>} />
       <Route path="/staff/admissions" element={<StaffOnly><Admissions /></StaffOnly>} />
       <Route path="/staff/staff" element={<StaffOnly><Staff /></StaffOnly>} />
+      <Route path="/staff/payroll" element={<StaffOnly><Payroll /></StaffOnly>} />
       <Route path="/staff/reports" element={<StaffOnly><Reports /></StaffOnly>} />
       <Route path="/staff/announcements" element={<StaffOnly><Announcements /></StaffOnly>} />
       <Route path="/staff/audit" element={<StaffOnly><AuditLogPage /></StaffOnly>} />
@@ -75,6 +82,9 @@ export default function App() {
       <Route path="/portal" element={<StudentOnly><PortalDashboard /></StudentOnly>} />
       <Route path="/portal/payments" element={<StudentOnly><PortalPayments /></StudentOnly>} />
       <Route path="/portal/pay" element={<StudentOnly><PortalPay /></StudentOnly>} />
+      <Route path="/portal/results" element={<StudentOnly><PortalResults /></StudentOnly>} />
+      <Route path="/portal/timetable" element={<StudentOnly><PortalTimetable /></StudentOnly>} />
+      <Route path="/portal/subjects" element={<StudentOnly><PortalCourses /></StudentOnly>} />
       <Route path="/portal/announcements" element={<StudentOnly><Announcements /></StudentOnly>} />
       <Route path="/portal/settings" element={<StudentOnly><PortalSettings /></StudentOnly>} />
 

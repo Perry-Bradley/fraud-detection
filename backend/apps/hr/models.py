@@ -106,3 +106,37 @@ class LeaveRequest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.staff.full_name} {self.leave_type} ({self.status})"
+
+
+class SalaryPayment(models.Model):
+    """An outbound salary disbursement to a staff member via mobile money."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SUCCESSFUL = "successful", "Successful"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    staff = models.ForeignKey(
+        StaffProfile, on_delete=models.PROTECT, related_name="salary_payments"
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    phone = models.CharField(max_length=30)
+    period = models.CharField(max_length=40, blank=True)  # e.g. "June 2026"
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    reference = models.CharField(max_length=100, blank=True, db_index=True)
+    operator = models.CharField(max_length=20, blank=True)
+    is_stub = models.BooleanField(default=False)
+    failure_reason = models.CharField(max_length=255, blank=True)
+    raw_callback = models.JSONField(null=True, blank=True)
+    disbursed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.staff.full_name} {self.amount} ({self.status})"

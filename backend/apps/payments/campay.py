@@ -145,6 +145,51 @@ def initiate_collect(
     )
 
 
+def disburse(
+    *,
+    phone: str,
+    amount: float,
+    description: str,
+    external_reference: str,
+) -> CollectResult:
+    """Send money OUT to a phone (Campay withdraw) — used for staff salary payouts.
+
+    Same auth as collection. In stub mode (no credentials) returns a fake
+    reference so the payroll flow is demoable without a live Campay balance.
+    """
+    token = _get_token()
+    if token is None:
+        logger.info("[campay] STUB disburse: %s XAF to %s (ref=%s)", amount, phone, external_reference)
+        return CollectResult(
+            reference=f"STUB-WD-{uuid.uuid4().hex[:10].upper()}",
+            operator="stub",
+            ussd_code="",
+            status="SUCCESSFUL",  # stub payout resolves immediately for demos
+            stub=True,
+        )
+
+    headers = {
+        "Authorization": f"Token {token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "amount": str(int(round(amount))),
+        "currency": "XAF",
+        "to": _normalize_phone(phone),
+        "description": description,
+        "external_reference": external_reference,
+    }
+    r = requests.post(_api("withdraw/"), json=payload, headers=headers, timeout=20)
+    r.raise_for_status()
+    data = r.json()
+    return CollectResult(
+        reference=data.get("reference", ""),
+        operator=data.get("operator", ""),
+        ussd_code="",
+        status=data.get("status", "PENDING"),
+    )
+
+
 def fetch_status(reference: str) -> Optional[dict]:
     """Poll Campay for the current status of a reference. Returns None on failure."""
     token = _get_token()

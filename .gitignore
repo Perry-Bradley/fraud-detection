@@ -41,3 +41,13 @@ logs/
 
 # Postgres data
 pgdata/
+
+# Generated report/presentation artifacts (regenerate via report/generate_*.py).
+# These are large binaries that bloat the repo and slow pushes.
+report/*.docx
+report/*.pptx
+report/*.pdf
+report/~$*
+report/images/*.png
+report/images/*.jpg
+report/images/*.jpeg

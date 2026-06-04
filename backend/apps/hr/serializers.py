@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import StaffProfile, StaffAttendance, LeaveRequest
+from .models import StaffProfile, StaffAttendance, LeaveRequest, SalaryPayment
 
 
 class StaffProfileSerializer(serializers.ModelSerializer):
@@ -40,3 +40,18 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             "reviewed_at", "created_at",
         )
         read_only_fields = ("id", "status", "reviewed_by", "reviewed_at", "created_at")
+
+
+class SalaryPaymentSerializer(serializers.ModelSerializer):
+    staff_name = serializers.CharField(source="staff.full_name", read_only=True)
+    staff_code = serializers.CharField(source="staff.staff_id", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = SalaryPayment
+        fields = (
+            "id", "staff", "staff_name", "staff_code", "amount", "phone",
+            "period", "status", "status_display", "reference", "operator",
+            "is_stub", "failure_reason", "created_at",
+        )
+        read_only_fields = fields

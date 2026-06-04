@@ -19,6 +19,7 @@ const ICONS = {
   pencil: <><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></>,
   inbox: <><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></>,
   staff: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></>,
+  payroll: <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>,
 }
 const Icon = ({ d }) => (
   <span className="nav-icon">
@@ -53,6 +54,7 @@ export default function Layout({ children }) {
           <NavLink to="/staff/timetable"><Icon d={ICONS.calendar}/> Timetable</NavLink>
           <NavLink to="/staff/admissions"><Icon d={ICONS.inbox}/> Admissions</NavLink>
           <NavLink to="/staff/staff"><Icon d={ICONS.staff}/> Staff</NavLink>
+          {isAdmin && <NavLink to="/staff/payroll"><Icon d={ICONS.payroll}/> Payroll</NavLink>}
           <NavLink to="/staff/reports"><Icon d={ICONS.reports}/> Reports</NavLink>
           <NavLink to="/staff/announcements"><Icon d={ICONS.announcements}/> Announcements</NavLink>
           {isAdmin && <NavLink to="/staff/audit"><Icon d={ICONS.audit}/> Audit Log</NavLink>}
@@ -85,6 +87,7 @@ function titleFor(path) {
   if (path.startsWith('/staff/exams')) return 'Exams'
   if (path.startsWith('/staff/timetable')) return 'Timetable'
   if (path.startsWith('/staff/admissions')) return 'Admissions'
+  if (path.startsWith('/staff/payroll')) return 'Payroll'
   if (path.startsWith('/staff/staff')) return 'Staff'
   if (path.startsWith('/staff/reports')) return 'Reports'
   if (path.startsWith('/staff/announcements')) return 'Announcements'

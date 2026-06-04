@@ -31,6 +31,16 @@ export function AuthProvider({ children }) {
     return me.data
   }
 
+  async function signup(payload) {
+    // Public student self-registration; returns JWTs and logs the user in.
+    const { data } = await api.post('/auth/signup/', payload)
+    localStorage.setItem('access_token', data.access)
+    localStorage.setItem('refresh_token', data.refresh)
+    const me = await api.get('/users/me/')
+    setUser(me.data)
+    return me.data
+  }
+
   function logout() {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
@@ -38,7 +48,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthCtx.Provider value={{ user, login, logout, loading }}>
+    <AuthCtx.Provider value={{ user, login, signup, logout, loading }}>
       {children}
     </AuthCtx.Provider>
   )

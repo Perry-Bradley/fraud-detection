@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
 export default function Login() {
@@ -42,7 +42,10 @@ export default function Login() {
             {busy ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-        <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 16 }}>
+        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 16, textAlign: 'center' }}>
+          New student? <Link to="/signup">Create an account</Link>
+        </p>
+        <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 8 }}>
           Staff: <code>admin / admin</code><br />
           Student: matricule (e.g. <code>CT24A101</code>) — password = matricule
         </p>

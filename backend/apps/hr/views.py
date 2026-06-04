@@ -1,13 +1,20 @@
+from decimal import Decimal, InvalidOperation
+
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from apps.accounts.permissions import IsStaffMember, IsStaffOrReadOnly, IsAdmin
-from .models import StaffProfile, StaffAttendance, LeaveRequest
+from .models import StaffProfile, StaffAttendance, LeaveRequest, SalaryPayment
 from .serializers import (
     StaffProfileSerializer, StaffAttendanceSerializer, LeaveRequestSerializer,
+    SalaryPaymentSerializer,
 )
+from .services import disburse_salary
 
 
 class StaffProfileViewSet(viewsets.ModelViewSet):
@@ -74,3 +81,40 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[IsAdmin])
     def reject(self, request, pk=None):
         return self._decide(request, LeaveRequest.Status.REJECTED)
+
+
+class SalaryPaymentViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only disbursement history (any staff member can view)."""
+    queryset = SalaryPayment.objects.select_related("staff").all()
+    serializer_class = SalaryPaymentSerializer
+    permission_classes = [IsStaffMember]
+    filterset_fields = ("staff", "status")
+    search_fields = ("staff__full_name", "staff__staff_id", "reference", "period")
+
+
+class DisburseSalaryView(APIView):
+    """Admin sends a salary payment to a staff member via mobile money.
+
+    Body: { "staff": <id>, "amount": <number>, "period": "June 2026", "phone": "<optional>" }
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        staff = get_object_or_404(StaffProfile, id=request.data.get("staff"))
+        try:
+            amount = Decimal(str(request.data.get("amount", "")))
+        except (InvalidOperation, TypeError):
+            return Response({"detail": "amount must be a number"}, status=400)
+        if amount <= 0:
+            return Response({"detail": "amount must be greater than 0"}, status=400)
+
+        payment = disburse_salary(
+            staff=staff,
+            amount=amount,
+            period=request.data.get("period", "") or "",
+            phone=request.data.get("phone", "") or "",
+            actor=request.user,
+        )
+        body = SalaryPaymentSerializer(payment).data
+        ok = payment.status != SalaryPayment.Status.FAILED
+        return Response(body, status=status.HTTP_201_CREATED if ok else status.HTTP_400_BAD_REQUEST)

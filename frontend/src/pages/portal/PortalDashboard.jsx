@@ -9,6 +9,9 @@ const ICONS = {
   pay: <><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></>,
   history: <><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></>,
   bell: <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></>,
+  results: <><circle cx="12" cy="8" r="5"/><path d="M8.2 12L7 22l5-3 5 3-1.2-10"/></>,
+  timetable: <><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></>,
+  book: <><path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M9 8h6M9 12h6"/></>,
   settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
 }
 const Icon = ({ d, size = 14 }) => (
@@ -20,11 +23,20 @@ const Icon = ({ d, size = 14 }) => (
 export default function PortalDashboard() {
   const [bal, setBal] = useState(null)
   const [pays, setPays] = useState([])
+  const [cls, setCls] = useState(null)
+  const [results, setResults] = useState(null)
   const [err, setErr] = useState(null)
 
   useEffect(() => {
-    api.get('/portal/balance/').then((r) => setBal(r.data)).catch((e) => setErr(e.response?.data?.detail || 'Could not load balance'))
-    api.get('/portal/payments/').then((r) => setPays(r.data))
+    function loadAll() {
+      api.get('/portal/balance/').then((r) => setBal(r.data)).catch((e) => setErr(e.response?.data?.detail || 'Could not load balance'))
+      api.get('/portal/payments/').then((r) => setPays(r.data)).catch(() => {})
+      api.get('/portal/class/').then((r) => setCls(r.data)).catch(() => {})
+      api.get('/portal/results/').then((r) => setResults(r.data)).catch(() => {})
+    }
+    loadAll()
+    const t = setInterval(loadAll, 30000)   // live refresh
+    return () => clearInterval(t)
   }, [])
 
   if (err) return <div className="card"><h2>Profile not found</h2><p>{err}</p></div>
@@ -54,18 +66,58 @@ export default function PortalDashboard() {
           <span className="qa-icon"><Icon d={ICONS.pay} size={14}/></span>
           Pay Online
         </Link>
+        <Link to="/portal/results" className="quick-action">
+          <span className="qa-icon"><Icon d={ICONS.results} size={14}/></span>
+          Results
+        </Link>
+        <Link to="/portal/timetable" className="quick-action">
+          <span className="qa-icon"><Icon d={ICONS.timetable} size={14}/></span>
+          Timetable
+        </Link>
+        <Link to="/portal/subjects" className="quick-action">
+          <span className="qa-icon"><Icon d={ICONS.book} size={14}/></span>
+          Subjects
+        </Link>
         <Link to="/portal/payments" className="quick-action">
           <span className="qa-icon"><Icon d={ICONS.history} size={14}/></span>
           History
-        </Link>
-        <Link to="/portal/announcements" className="quick-action">
-          <span className="qa-icon"><Icon d={ICONS.bell} size={14}/></span>
-          Announcements
         </Link>
         <Link to="/portal/settings" className="quick-action">
           <span className="qa-icon"><Icon d={ICONS.settings} size={14}/></span>
           Settings
         </Link>
+      </div>
+
+      {/* ACADEMIC SNAPSHOT */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <h2 style={{ margin: 0 }}>Academics</h2>
+          <Link to="/portal/results" style={{ fontSize: 13 }}>View results →</Link>
+        </div>
+        <div className="grid cols-4">
+          <div className="card stat" style={{ margin: 0 }}>
+            <div className="label">Class</div>
+            <div className="value" style={{ fontSize: 18 }}>{bal.class_name || '—'}</div>
+            {cls?.level && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{cls.level}</div>}
+          </div>
+          <div className="card stat" style={{ margin: 0 }}>
+            <div className="label">Class Teacher</div>
+            <div className="value" style={{ fontSize: 16 }}>{cls?.class_teacher || '—'}</div>
+          </div>
+          <div className="card stat" style={{ margin: 0 }}>
+            <div className="label">Average</div>
+            <div className="value" style={{ color: 'var(--primary)' }}>
+              {results?.report_card?.average20 == null ? '—' : results.report_card.average20.toFixed(1)}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>/ 20</div>
+          </div>
+          <div className="card stat" style={{ margin: 0 }}>
+            <div className="label">Class Rank</div>
+            <div className="value">
+              {results?.report_card?.rank == null ? '—' : `${results.report_card.rank}/${results.report_card.class_size}`}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* BALANCE OVERVIEW */}

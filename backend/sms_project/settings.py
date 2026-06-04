@@ -223,6 +223,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.payments.tasks.expire_stale_intents",
         "schedule": 300.0,  # every 5 minutes
     },
+    "reconcile-salary-disbursements": {
+        "task": "apps.hr.tasks.reconcile_pending_disbursements",
+        "schedule": 60.0,  # every 60 seconds
+    },
 }
 
 # ---------- External services ----------

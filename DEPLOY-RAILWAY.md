@@ -100,7 +100,7 @@ owns that.
 In the **Campay dashboard → webhook settings**, set the webhook URL to:
 
 ```
-https://<your-backend-domain>.up.railway.app/api/payments/webhooks/campay/
+https://<your-backend-domain>.up.railway.app/api/webhooks/campay/
 ```
 
 Now a real sandbox payment from the student portal confirms automatically.

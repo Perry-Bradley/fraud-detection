@@ -23,10 +23,11 @@ for _ in range(60):
 print("DB unreachable", file=sys.stderr); sys.exit(1)
 PY
 
-echo "[entrypoint] Generating migrations (auto)..."
-python manage.py makemigrations accounts students fees payments audit analytics portal notifications announcements academics attendance exams timetable admissions hr --noinput
-
 echo "[entrypoint] Applying migrations..."
+# Migrations are committed to the repo (backend/apps/*/migrations). When you
+# change a model, run `python manage.py makemigrations` locally and COMMIT the
+# new file — do not rely on generating them at runtime (that breaks on a
+# database that already has earlier migrations applied).
 python manage.py migrate --noinput
 
 echo "[entrypoint] Collecting static files..."
