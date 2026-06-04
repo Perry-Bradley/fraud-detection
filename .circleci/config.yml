@@ -82,35 +82,9 @@ jobs:
             npm install --no-audit --no-fund
             npm run build
 
-  deploy:
-    docker:
-      - image: cimg/node:18.20
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run:
-          name: Install Railway CLI
-          command: npm i -g @railway/cli
-      - run:
-          name: Deploy services to Railway
-          # RAILWAY_TOKEN (a project token) must be set as a CircleCI env var.
-          # Each service is deployed from its configured root directory.
-          command: |
-            railway up --service sms-backend --ci
-            railway up --service sms-ml --ci
-            railway up --service sms-frontend --ci
-
 workflows:
-  ci-cd:
+  ci:
     jobs:
       - backend-tests
       - ml-tests
       - frontend-build
-      - deploy:
-          requires:
-            - backend-tests
-            - ml-tests
-            - frontend-build
-          filters:
-            branches:
-              only: main

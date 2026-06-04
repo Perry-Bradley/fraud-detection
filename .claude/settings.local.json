@@ -34,7 +34,12 @@
       "Bash(curl -s -o nul -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/)",
       "Bash(python -c \"import yaml,sys; [yaml.safe_load\\(open\\(f\\)\\) and print\\(f'{f} OK'\\) for f in ['.github/workflows/ci.yml','.github/workflows/deploy.yml','.github/workflows/codeql.yml']]\")",
       "Bash(python -c \"import yaml; yaml.safe_load\\(open\\('.circleci/config.yml'\\)\\); print\\('.circleci/config.yml OK'\\)\")",
-      "Bash(python -c \"import configparser; c=configparser.ConfigParser\\(\\); c.read\\('ml-service/pytest.ini'\\); print\\('pytest.ini OK:', dict\\(c['pytest']\\)\\)\")"
+      "Bash(python -c \"import configparser; c=configparser.ConfigParser\\(\\); c.read\\('ml-service/pytest.ini'\\); print\\('pytest.ini OK:', dict\\(c['pytest']\\)\\)\")",
+      "Bash(python -c \"import yaml; yaml.safe_load\\(open\\('.circleci/config.yml'\\)\\); print\\('circleci config OK'\\)\")",
+      "Bash(python -c \"import json; [print\\(f, 'OK'\\) for f in ['backend/railway.json','frontend/railway.json','ml-service/railway.json'] if json.load\\(open\\(f\\)\\)]\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\USER\\\\Desktop\\\\All\" -Recurse -File -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\USER\\\\Desktop\\\\All\" -Recurse -File -ErrorAction SilentlyContinue | Select-Object FullName | Where-Object {$_ -match '\\\\.\\(pdf|docx|pptx|txt|md\\)$'})"
     ]
   }
 }
