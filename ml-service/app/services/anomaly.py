@@ -55,14 +55,6 @@ def _heuristic(amount: float, history: List[dict]) -> tuple[bool, float]:
     std_amt = float(np.std(amounts)) or 1.0
 
     z = abs((amount - mean_amt) / std_amt)
-    same_day_dup = any(
-        abs(float(h["amount"]) - amount) < 1
-        and (datetime.now(tz=timezone.utc) - _safe_parse(h["timestamp"])).total_seconds() < 86400
-        for h in history
-    )
-
-    if same_day_dup:
-        return True, 0.95
     if z > 3:
         return True, min(0.5 + z / 10.0, 0.99)
     return False, float(z / 10.0)
@@ -70,6 +62,14 @@ def _heuristic(amount: float, history: List[dict]) -> tuple[bool, float]:
 
 def detect(amount: float, history: List[dict]) -> tuple[bool, float]:
     """Return (is_anomalous, score in [0,1])."""
+    same_day_dup = any(
+        abs(float(h["amount"]) - amount) < 1
+        and (datetime.now(tz=timezone.utc) - _safe_parse(h["timestamp"])).total_seconds() < 86400
+        for h in history
+    )
+    if same_day_dup:
+        return True, 0.95
+
     # Need a minimum amount of training data for IsolationForest.
     if len(history) < 10:
         return _heuristic(amount, history)

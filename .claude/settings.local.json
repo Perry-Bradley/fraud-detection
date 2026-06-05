@@ -65,7 +65,20 @@
       "Bash(npx --yes playwright --version)",
       "Bash(python -c \"import playwright; print\\('  installed'\\)\")",
       "Read(//c/Program Files/Google/Chrome/Application/**)",
-      "Read(//c/Program Files \\(x86\\)/Microsoft/Edge/Application/**)"
+      "Read(//c/Program Files \\(x86\\)/Microsoft/Edge/Application/**)",
+      "Bash(PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install playwright --no-audit --no-fund)",
+      "Bash(git fetch *)",
+      "Bash(node capture_devops.js)",
+      "Bash(git rev-list *)",
+      "Bash(git cat-file *)",
+      "Bash(sort -k2 -n -r)",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(awk '{s+=$1} END {print s/1024 \" KB total\"}')",
+      "Bash(git reset *)",
+      "Bash(git restore *)",
+      "Bash(git commit *)",
+      "Bash(python -m py_compile backend/apps/students/management/commands/seed_school.py)",
+      "Bash(git ls-tree *)"
     ]
   }
 }

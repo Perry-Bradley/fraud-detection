@@ -39,7 +39,14 @@ class Student(models.Model):
 
     def total_due(self):
         from apps.fees.models import FeeStructure
-        return FeeStructure.objects.filter(class_name=self.class_name).aggregate(s=models.Sum("amount"))["s"] or 0
+        from apps.academics.models import AcademicYear
+        current_year = AcademicYear.objects.filter(is_current=True).first()
+        if not current_year:
+            return 0
+        return FeeStructure.objects.filter(
+            class_name=self.class_name,
+            academic_year=current_year.name
+        ).aggregate(s=models.Sum("amount"))["s"] or 0
 
     def outstanding(self):
         return self.total_due() - self.total_paid()

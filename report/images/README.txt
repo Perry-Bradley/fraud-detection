@@ -25,6 +25,13 @@ dashboard_kpis.png        ->  Figure 7: the dashboard top (KPI cards + collectio
                                          payment-methods donut).
 dashboard_defaulters.png  ->  Figure 8: the dashboard (Top Defaulters + Recent Activity).
 
+AUTO-CAPTURED (already generated for you by capture_devops.js):
+grafana_dashboard.png     ->  Figure 6: the Grafana "SMS Overview" dashboard (live data).
+prometheus_targets.png    ->  Figure 7: Prometheus targets — backend, ML & prometheus all UP.
+   (also captured: grafana_datasources.png, prometheus_graph.png, ml_docs.png)
+
+To refresh these any time the stack is running:  node capture_devops.js
+
 (The GitHub Actions billing screenshot is no longer used.)
 
 OPTIONAL

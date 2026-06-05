@@ -17,6 +17,7 @@ import Attendance from './pages/Attendance.jsx'
 import Exams from './pages/Exams.jsx'
 import Admissions from './pages/Admissions.jsx'
 import Staff from './pages/Staff.jsx'
+import FeeStructures from './pages/FeeStructures.jsx'
 import Payroll from './pages/Payroll.jsx'
 import StaffLayout from './components/Layout.jsx'
 import StudentLayout from './components/StudentLayout.jsx'
@@ -65,6 +66,7 @@ export default function App() {
       <Route path="/staff/students" element={<StaffOnly><Students /></StaffOnly>} />
       <Route path="/staff/students/:id" element={<StaffOnly><StudentDetail /></StaffOnly>} />
       <Route path="/staff/payments" element={<StaffOnly><Payments /></StaffOnly>} />
+      <Route path="/staff/fees" element={<StaffOnly><FeeStructures /></StaffOnly>} />
       <Route path="/staff/anomalies" element={<StaffOnly><Anomalies /></StaffOnly>} />
       <Route path="/staff/timetable" element={<StaffOnly><Timetable /></StaffOnly>} />
       <Route path="/staff/gradebook" element={<StaffOnly><Gradebook /></StaffOnly>} />
