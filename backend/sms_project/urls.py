@@ -12,7 +12,24 @@ from drf_spectacular.views import (
 
 
 def health(_request):
-    return JsonResponse({"status": "ok"})
+    import requests
+    from django.conf import settings
+    ml_url = settings.ML_SERVICE_URL
+    ml_reachable = False
+    ml_error = None
+    try:
+        r = requests.get(f"{ml_url}/health", timeout=2)
+        r.raise_for_status()
+        ml_reachable = True
+    except Exception as e:
+        ml_error = str(e)
+
+    return JsonResponse({
+        "status": "ok" if ml_reachable else "degraded",
+        "ml_service_url": ml_url,
+        "ml_service_reachable": ml_reachable,
+        "ml_service_error": ml_error,
+    })
 
 
 urlpatterns = [
