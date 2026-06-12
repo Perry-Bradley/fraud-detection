@@ -37,9 +37,14 @@ export default function PortalPay() {
 
   async function submit(e) {
     e.preventDefault()
+    const amt = Number(amount)
+    if (!amt || amt < 10) {
+      setErr('Please enter an amount of at least 10 FCFA.')
+      return
+    }
     setBusy(true); setErr(null)
     try {
-      const { data } = await api.post('/portal/pay/', { amount: Number(amount), phone })
+      const { data } = await api.post('/portal/pay/', { amount: amt, phone })
       const r = await api.get(`/portal/intents/${data.intent_id}/`)
       setIntent({ ...r.data, _initial: data })
     } catch (ex) {
@@ -166,6 +171,15 @@ export default function PortalPay() {
         </div>
       </div>
 
+      {bal.outstanding <= 0 && (
+        <div style={{
+          background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8,
+          padding: '10px 16px', marginBottom: 16, fontSize: 14, color: '#166534',
+        }}>
+          Your fees are fully paid for this term. You can still make an additional payment below if needed.
+        </div>
+      )}
+
       {/* Payment form */}
       <div className="card" style={{ maxWidth: 520 }}>
         <h2 style={{ marginTop: 0 }}>Mobile Money Payment</h2>
@@ -196,9 +210,9 @@ export default function PortalPay() {
               min="10"
               step="1"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => { setAmount(e.target.value); setErr(null) }}
               required
-              placeholder="0"
+              placeholder={bal.outstanding > 0 ? String(Math.round(bal.outstanding)) : 'e.g. 50000'}
               style={{ fontSize: 18, fontWeight: 600 }}
             />
           </div>
@@ -220,8 +234,12 @@ export default function PortalPay() {
 
           {err && <div className="error">{err}</div>}
 
-          <button type="submit" disabled={busy} style={{ width: '100%', marginTop: 8, padding: 12, fontSize: 14 }}>
-            {busy ? 'Initiating...' : `Pay ${amount ? fmt(amount) + ' FCFA' : ''}`}
+          <button
+            type="submit"
+            disabled={busy || !amount || Number(amount) < 10}
+            style={{ width: '100%', marginTop: 8, padding: 12, fontSize: 14 }}
+          >
+            {busy ? 'Initiating...' : amount && Number(amount) >= 10 ? `Pay ${fmt(amount)} FCFA` : 'Enter an amount above'}
           </button>
 
           <p style={{ color: 'var(--muted)', fontSize: 11, marginTop: 12, textAlign: 'center' }}>
