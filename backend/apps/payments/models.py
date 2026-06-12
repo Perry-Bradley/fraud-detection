@@ -5,6 +5,10 @@ from apps.students.models import Student
 from apps.fees.models import FeeStructure
 
 
+def _proof_upload_path(instance, filename):
+    return f"payment_proofs/{instance.student_id}/{uuid.uuid4().hex[:8]}_{filename}"
+
+
 class Payment(models.Model):
     class Method(models.TextChoices):
         CASH = "cash", "Cash"
@@ -112,3 +116,52 @@ class PaymentIntent(models.Model):
 
     def __str__(self) -> str:
         return f"Intent {self.id} ({self.status}) - {self.student.full_name} {self.amount}"
+
+
+class ManualPaymentSubmission(models.Model):
+    """A student-submitted payment proof awaiting admin review.
+
+    When approved, the admin action creates a real Payment record.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending Review"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        FLAGGED = "flagged", "Flagged"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name="manual_payment_submissions"
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_method = models.CharField(
+        max_length=30, choices=Payment.Method.choices, default=Payment.Method.CASH
+    )
+    payment_date = models.DateField()
+    proof_file = models.FileField(upload_to=_proof_upload_path)
+    notes = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="reviewed_manual_submissions",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
+    payment = models.OneToOneField(
+        Payment,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="manual_submission",
+    )
+
+    class Meta:
+        ordering = ("-submitted_at",)
+
+    def __str__(self) -> str:
+        return f"Submission {self.id} — {self.student.full_name} {self.amount} ({self.status})"

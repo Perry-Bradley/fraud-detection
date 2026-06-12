@@ -6,6 +6,7 @@ import HeaderBar from './HeaderBar.jsx'
 const ICONS = {
   home: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
   pay: <><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></>,
+  upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>,
   history: <><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></>,
   results: <><circle cx="12" cy="8" r="5"/><path d="M8.2 12L7 22l5-3 5 3-1.2-10"/></>,
   timetable: <><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></>,
@@ -39,6 +40,7 @@ export default function StudentLayout({ children }) {
           <NavLink to="/portal/timetable"><Icon d={ICONS.timetable}/> Timetable</NavLink>
           <NavLink to="/portal/subjects"><Icon d={ICONS.book}/> My Subjects</NavLink>
           <NavLink to="/portal/pay"><Icon d={ICONS.pay}/> Pay Online</NavLink>
+          <NavLink to="/portal/manual-payment"><Icon d={ICONS.upload}/> Submit Receipt</NavLink>
           <NavLink to="/portal/payments"><Icon d={ICONS.history}/> Payment History</NavLink>
           <NavLink to="/portal/announcements"><Icon d={ICONS.bell}/> Announcements</NavLink>
           <NavLink to="/portal/settings"><Icon d={ICONS.settings}/> Settings</NavLink>
@@ -66,7 +68,8 @@ function titleFor(path) {
   if (path.startsWith('/portal/results')) return 'My Results'
   if (path.startsWith('/portal/timetable')) return 'Timetable'
   if (path.startsWith('/portal/subjects')) return 'My Subjects'
-  if (path.startsWith('/portal/pay')) return 'Pay Online'
+  if (path === '/portal/pay') return 'Pay Online'
+  if (path.startsWith('/portal/manual-payment')) return 'Submit Receipt'
   if (path.startsWith('/portal/payments')) return 'Payment History'
   if (path.startsWith('/portal/announcements')) return 'Announcements'
   if (path.startsWith('/portal/settings')) return 'Settings'

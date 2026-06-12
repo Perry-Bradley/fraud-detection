@@ -15,9 +15,9 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from apps.accounts.permissions import IsStudent
-from apps.payments.models import Payment, PaymentIntent
+from apps.payments.models import Payment, PaymentIntent, ManualPaymentSubmission
 from apps.payments.receipts import render_receipt_pdf
-from apps.payments.serializers import PaymentSerializer, PaymentIntentSerializer
+from apps.payments.serializers import PaymentSerializer, PaymentIntentSerializer, ManualPaymentSubmissionSerializer
 from apps.payments.campay import initiate_collect
 from apps.students.models import Student
 from apps.students.serializers import StudentSerializer
@@ -108,8 +108,8 @@ class InitiatePaymentView(APIView):
             amount = Decimal(str(request.data.get("amount", "")))
         except (InvalidOperation, TypeError):
             return Response({"detail": "amount must be a number"}, status=400)
-        if amount <= 0:
-            return Response({"detail": "amount must be > 0"}, status=400)
+        if amount < 10:
+            return Response({"detail": "amount must be at least 10"}, status=400)
 
         outstanding = s.outstanding()
         if amount > outstanding and outstanding > 0:
@@ -285,6 +285,77 @@ class MyResultsView(APIView):
             "report_card": report,
             "exam_results": exams,
         })
+
+
+class SubmitManualPaymentView(APIView):
+    """Student submits a manual payment proof for admin review."""
+    permission_classes = [IsAuthenticated, IsStudent]
+    parser_classes_override = None  # handled by DEFAULT_PARSER_CLASSES (includes MultiPartParser)
+
+    def post(self, request):
+        from decimal import Decimal, InvalidOperation
+        s = _get_my_student(request)
+
+        try:
+            amount = Decimal(str(request.data.get("amount", "")))
+        except (InvalidOperation, TypeError):
+            return Response({"detail": "amount must be a valid number"}, status=400)
+        if amount < 10:
+            return Response({"detail": "amount must be at least 10"}, status=400)
+
+        payment_method = request.data.get("payment_method", "cash")
+        valid_methods = [m[0] for m in ManualPaymentSubmission._meta.get_field("payment_method").choices]
+        if payment_method not in valid_methods:
+            return Response({"detail": f"payment_method must be one of {valid_methods}"}, status=400)
+
+        payment_date = request.data.get("payment_date")
+        if not payment_date:
+            return Response({"detail": "payment_date is required (YYYY-MM-DD)"}, status=400)
+
+        proof_file = request.FILES.get("proof_file")
+        if not proof_file:
+            return Response({"detail": "proof_file is required"}, status=400)
+
+        allowed_types = ("image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf")
+        if proof_file.content_type not in allowed_types:
+            return Response({"detail": "proof_file must be an image (JPEG/PNG/GIF/WebP) or PDF"}, status=400)
+
+        if proof_file.size > 10 * 1024 * 1024:
+            return Response({"detail": "proof_file must be under 10 MB"}, status=400)
+
+        submission = ManualPaymentSubmission.objects.create(
+            student=s,
+            amount=amount,
+            payment_method=payment_method,
+            payment_date=payment_date,
+            proof_file=proof_file,
+            notes=request.data.get("notes", ""),
+        )
+
+        from apps.accounts.models import User
+        from apps.notifications.models import notify
+        for admin in User.objects.filter(role=User.Role.ADMIN, is_active=True):
+            notify(
+                admin,
+                title="Manual payment submitted",
+                message=f"{s.full_name} submitted {amount} FCFA ({payment_method}) for review.",
+                kind="info",
+                link="/staff/payments",
+            )
+
+        serializer = ManualPaymentSubmissionSerializer(submission, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class MyManualSubmissionsView(APIView):
+    """List the current student's manual payment submissions."""
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        s = _get_my_student(request)
+        qs = ManualPaymentSubmission.objects.filter(student=s).order_by("-submitted_at")
+        serializer = ManualPaymentSubmissionSerializer(qs, many=True, context={"request": request})
+        return Response(serializer.data)
 
 
 class SignupView(APIView):

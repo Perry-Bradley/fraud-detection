@@ -12,6 +12,8 @@ from .views import (
     MySubjectsView,
     MyTimetableView,
     MyResultsView,
+    SubmitManualPaymentView,
+    MyManualSubmissionsView,
     SignupView,
 )
 
@@ -32,6 +34,10 @@ urlpatterns = [
     path("portal/pay/", InitiatePaymentView.as_view(), name="portal-pay"),
     path("portal/intents/", MyIntentsView.as_view(), name="portal-intents"),
     path("portal/intents/<uuid:intent_id>/", IntentStatusView.as_view(), name="portal-intent-status"),
+
+    # Manual payment submissions
+    path("portal/manual-payments/", SubmitManualPaymentView.as_view(), name="portal-manual-pay"),
+    path("portal/manual-payments/list/", MyManualSubmissionsView.as_view(), name="portal-manual-list"),
 
     # Public student self-registration
     path("auth/signup/", SignupView.as_view(), name="portal-signup"),

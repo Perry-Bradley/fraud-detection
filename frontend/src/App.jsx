@@ -24,6 +24,7 @@ import StudentLayout from './components/StudentLayout.jsx'
 import PortalDashboard from './pages/portal/PortalDashboard.jsx'
 import PortalPayments from './pages/portal/PortalPayments.jsx'
 import PortalPay from './pages/portal/PortalPay.jsx'
+import PortalManualPayment from './pages/portal/PortalManualPayment.jsx'
 import PortalSettings from './pages/portal/PortalSettings.jsx'
 import PortalTimetable from './pages/portal/PortalTimetable.jsx'
 import PortalCourses from './pages/portal/PortalCourses.jsx'
@@ -84,6 +85,7 @@ export default function App() {
       <Route path="/portal" element={<StudentOnly><PortalDashboard /></StudentOnly>} />
       <Route path="/portal/payments" element={<StudentOnly><PortalPayments /></StudentOnly>} />
       <Route path="/portal/pay" element={<StudentOnly><PortalPay /></StudentOnly>} />
+      <Route path="/portal/manual-payment" element={<StudentOnly><PortalManualPayment /></StudentOnly>} />
       <Route path="/portal/results" element={<StudentOnly><PortalResults /></StudentOnly>} />
       <Route path="/portal/timetable" element={<StudentOnly><PortalTimetable /></StudentOnly>} />
       <Route path="/portal/subjects" element={<StudentOnly><PortalCourses /></StudentOnly>} />

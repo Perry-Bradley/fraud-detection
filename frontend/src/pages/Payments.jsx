@@ -13,12 +13,26 @@ const METHOD_BADGES = {
   cheque: 'accent',
 }
 
+const SUB_STATUS_BADGE = {
+  pending:  'warn',
+  approved: 'ok',
+  rejected: 'danger',
+  flagged:  'accent',
+}
+
 export default function Payments() {
   const toast = useToast()
+  const [tab, setTab] = useState('payments')
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [onlyAnom, setOnlyAnom] = useState(false)
+
+  // Manual submissions state
+  const [subs, setSubs] = useState([])
+  const [subsLoading, setSubsLoading] = useState(true)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [reviewSub, setReviewSub] = useState(null)
 
   async function load() {
     setLoading(true)
@@ -29,7 +43,19 @@ export default function Payments() {
       setRows(r.data.results || r.data)
     } finally { setLoading(false) }
   }
+
+  async function loadSubs() {
+    setSubsLoading(true)
+    try {
+      const r = await api.get('/manual-submissions/', { params: { page_size: 500 } })
+      const data = r.data.results || r.data
+      setSubs(data)
+      setPendingCount(data.filter((s) => s.status === 'pending').length)
+    } finally { setSubsLoading(false) }
+  }
+
   useEffect(() => { load() }, [onlyAnom])
+  useEffect(() => { loadSubs() }, [])
 
   const columns = [
     { key: 'receipt_no', label: 'Receipt', sortable: true, render: (p) => <code>{p.receipt_no}</code> },
@@ -57,6 +83,30 @@ export default function Payments() {
     },
   ]
 
+  const subColumns = [
+    { key: 'submitted_at', label: 'Submitted', sortable: true, render: (s) => new Date(s.submitted_at).toLocaleDateString() },
+    { key: 'student_name', label: 'Student', sortable: true, render: (s) => <><div>{s.student_name}</div><small style={{ color: 'var(--muted)' }}>{s.student_matricule} · {s.student_class}</small></> },
+    { key: 'amount', label: 'Amount', sortable: true, align: 'right', render: (s) => <strong>{fmt(s.amount)}</strong> },
+    { key: 'payment_method', label: 'Method', render: (s) => <span className={`badge ${METHOD_BADGES[s.payment_method] || 'neutral'}`}>{s.payment_method.replace('_', ' ')}</span> },
+    { key: 'payment_date', label: 'Pay Date', sortable: true },
+    {
+      key: 'status', label: 'Status',
+      render: (s) => <span className={`badge ${SUB_STATUS_BADGE[s.status] || 'neutral'}`}>{s.status}</span>,
+    },
+    {
+      key: 'proof', label: 'Proof',
+      render: (s) => s.proof_file_url
+        ? <a href={s.proof_file_url} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>View</a>
+        : '—',
+    },
+    {
+      key: '_actions', label: '',
+      render: (s) => (
+        <button className="ghost small" onClick={() => setReviewSub(s)}>Review</button>
+      ),
+    },
+  ]
+
   return (
     <div>
       <div className="page-header">
@@ -65,28 +115,71 @@ export default function Payments() {
           <div className="subtitle">{rows.length} payment{rows.length === 1 ? '' : 's'} on file · AI fraud detection runs on every record.</div>
         </div>
         <div className="row-actions">
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-2)' }}>
-            <input
-              type="checkbox" style={{ width: 'auto', margin: 0 }}
-              checked={onlyAnom}
-              onChange={(e) => setOnlyAnom(e.target.checked)}
-            /> Anomalies only
-          </label>
-          <button onClick={() => setShowAdd(true)}>+ Record Payment</button>
+          {tab === 'payments' && (
+            <>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-2)' }}>
+                <input
+                  type="checkbox" style={{ width: 'auto', margin: 0 }}
+                  checked={onlyAnom}
+                  onChange={(e) => setOnlyAnom(e.target.checked)}
+                /> Anomalies only
+              </label>
+              <button onClick={() => setShowAdd(true)}>+ Record Payment</button>
+            </>
+          )}
         </div>
       </div>
 
-      <DataTable
-        rows={rows}
-        columns={columns}
-        loading={loading}
-        searchKeys={['receipt_no', 'student_name', 'student_matricule', 'reference', 'method']}
-        searchPlaceholder="Search by receipt, student, reference..."
-        emptyIcon="💰"
-        emptyTitle="No payments recorded"
-        emptySubtitle="Click Record Payment to register the first one."
-        initialSort={{ key: 'payment_date', dir: 'desc' }}
-      />
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid var(--border)', paddingBottom: 0 }}>
+        {[
+          { key: 'payments', label: 'All Payments' },
+          { key: 'submissions', label: <>Manual Submissions{pendingCount > 0 && <span className="badge warn" style={{ marginLeft: 6, fontSize: 11 }}>{pendingCount}</span>}</> },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            className="ghost"
+            onClick={() => setTab(key)}
+            style={{
+              borderRadius: '4px 4px 0 0',
+              borderBottom: tab === key ? '2px solid var(--primary)' : '2px solid transparent',
+              marginBottom: -2,
+              fontWeight: tab === key ? 700 : 400,
+              color: tab === key ? 'var(--primary)' : 'var(--muted)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'payments' && (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          loading={loading}
+          searchKeys={['receipt_no', 'student_name', 'student_matricule', 'reference', 'method']}
+          searchPlaceholder="Search by receipt, student, reference..."
+          emptyIcon="💰"
+          emptyTitle="No payments recorded"
+          emptySubtitle="Click Record Payment to register the first one."
+          initialSort={{ key: 'payment_date', dir: 'desc' }}
+        />
+      )}
+
+      {tab === 'submissions' && (
+        <DataTable
+          rows={subs}
+          columns={subColumns}
+          loading={subsLoading}
+          searchKeys={['student_name', 'student_matricule', 'payment_method', 'status', 'notes']}
+          searchPlaceholder="Search by student, method, status..."
+          emptyIcon="🧾"
+          emptyTitle="No manual submissions"
+          emptySubtitle="Students haven't submitted any payment receipts yet."
+          initialSort={{ key: 'submitted_at', dir: 'desc' }}
+        />
+      )}
 
       {showAdd && <RecordPaymentModal onClose={() => setShowAdd(false)} onSaved={(p) => {
         setShowAdd(false)
@@ -94,6 +187,120 @@ export default function Payments() {
         else toast.success('Payment recorded')
         load()
       }} />}
+
+      {reviewSub && (
+        <ReviewSubmissionModal
+          sub={reviewSub}
+          onClose={() => setReviewSub(null)}
+          onSaved={() => { setReviewSub(null); loadSubs(); load() }}
+        />
+      )}
+    </div>
+  )
+}
+
+function ReviewSubmissionModal({ sub, onClose, onSaved }) {
+  const toast = useToast()
+  const [note, setNote] = useState(sub.review_note || '')
+  const [busy, setBusy] = useState(false)
+
+  async function act(action) {
+    setBusy(true)
+    try {
+      await api.post(`/manual-submissions/${sub.id}/${action}/`, { note })
+      toast.success(action === 'approve' ? 'Payment approved and recorded' : action === 'reject' ? 'Submission rejected' : 'Submission flagged')
+      onSaved()
+    } catch (ex) {
+      toast.danger(ex.response?.data?.detail || `Could not ${action} submission`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="modal-back" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+        <h2 style={{ marginTop: 0 }}>Review Submission</h2>
+
+        {/* Student + details */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>Student</div>
+            <div style={{ fontWeight: 600 }}>{sub.student_name}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{sub.student_matricule} · {sub.student_class}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>Amount</div>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>{fmt(sub.amount)} <span style={{ fontSize: 12, fontWeight: 400 }}>FCFA</span></div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>Method</div>
+            <div>{sub.payment_method.replace('_', ' ')}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>Payment Date</div>
+            <div>{sub.payment_date}</div>
+          </div>
+        </div>
+
+        {sub.notes && (
+          <div style={{ padding: '8px 12px', background: 'var(--bg-2)', borderRadius: 6, fontSize: 13, marginBottom: 12 }}>
+            <strong>Student note:</strong> {sub.notes}
+          </div>
+        )}
+
+        {sub.proof_file_url && (
+          <div style={{ marginBottom: 16 }}>
+            <a href={sub.proof_file_url} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>
+              📎 View Proof of Payment
+            </a>
+          </div>
+        )}
+
+        <div className="form-row">
+          <label>Admin Note (optional)</label>
+          <textarea
+            rows="2"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Reason for rejection, confirmation details, etc."
+          />
+        </div>
+
+        <div className="row-actions" style={{ marginTop: 16, justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
+          <button type="button" className="ghost" onClick={onClose}>Cancel</button>
+          {sub.status !== 'approved' && (
+            <>
+              <button
+                type="button"
+                style={{ background: 'var(--warn-bg, #fef3c7)', color: '#92400e', border: '1px solid #fbbf24' }}
+                disabled={busy}
+                onClick={() => act('flag')}
+              >
+                {busy ? '...' : 'Flag'}
+              </button>
+              <button
+                type="button"
+                style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5' }}
+                disabled={busy}
+                onClick={() => act('reject')}
+              >
+                {busy ? '...' : 'Reject'}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => act('approve')}
+              >
+                {busy ? 'Approving...' : '✓ Approve & Record Payment'}
+              </button>
+            </>
+          )}
+          {sub.status === 'approved' && (
+            <span style={{ color: 'var(--success)', fontWeight: 600 }}>Already approved</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

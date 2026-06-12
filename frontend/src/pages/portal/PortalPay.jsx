@@ -193,8 +193,8 @@ export default function PortalPay() {
             <label>Amount (FCFA)</label>
             <input
               type="number"
-              min="100"
-              step="100"
+              min="10"
+              step="1"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               required

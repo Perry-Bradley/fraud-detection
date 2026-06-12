@@ -35,7 +35,15 @@ class Student(models.Model):
 
     def total_paid(self):
         from apps.payments.models import Payment
-        return Payment.objects.filter(student=self).aggregate(s=models.Sum("amount"))["s"] or 0
+        from apps.academics.models import AcademicYear
+        current_year = AcademicYear.objects.filter(is_current=True).first()
+        qs = Payment.objects.filter(student=self)
+        if current_year:
+            if current_year.start_date:
+                qs = qs.filter(payment_date__date__gte=current_year.start_date)
+            if current_year.end_date:
+                qs = qs.filter(payment_date__date__lte=current_year.end_date)
+        return qs.aggregate(s=models.Sum("amount"))["s"] or 0
 
     def total_due(self):
         from apps.fees.models import FeeStructure
@@ -43,10 +51,14 @@ class Student(models.Model):
         current_year = AcademicYear.objects.filter(is_current=True).first()
         if not current_year:
             return 0
+        # AcademicYear.name uses "/" (e.g. "2025/2026"); FeeStructure stores "-" (e.g. "2025-2026")
+        year_name_dash = current_year.name.replace("/", "-")
         return FeeStructure.objects.filter(
             class_name=self.class_name,
-            academic_year=current_year.name
+            academic_year__in=[current_year.name, year_name_dash],
         ).aggregate(s=models.Sum("amount"))["s"] or 0
 
     def outstanding(self):
-        return self.total_due() - self.total_paid()
+        due = self.total_due()
+        paid = self.total_paid()
+        return max(due - paid, 0)
