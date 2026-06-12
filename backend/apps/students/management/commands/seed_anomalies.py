@@ -16,8 +16,12 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from django.db.models import Sum
+
+from apps.academics.models import AcademicYear
 from apps.accounts.models import User
 from apps.audit.models import AuditLog
+from apps.fees.models import FeeStructure
 from apps.notifications.models import notify
 from apps.payments.models import Payment
 from apps.students.models import Student
@@ -34,7 +38,9 @@ PROFILES = [
 ]
 
 NORMAL_AMOUNTS = [20000, 25000, 30000, 40000, 50000]
-OUTLIER_AMOUNTS = [150000, 200000, 350000, 500000]
+# Outlier amounts are intentionally unusual compared to NORMAL_AMOUNTS (2-3× range)
+# but not so large they blow out a student's balance vs actual fees.
+OUTLIER_AMOUNTS = [85000, 95000, 110000, 125000]
 
 
 class Command(BaseCommand):
@@ -70,15 +76,32 @@ class Command(BaseCommand):
         anomaly_count = 0
 
         for student in targets:
-            # Ensure enough history for the anomaly to "feel" like an outlier
+            # Ensure enough history for the anomaly to "feel" like an outlier,
+            # but cap history payments so total_paid never exceeds total_due.
+            current_year = AcademicYear.objects.filter(is_current=True).first()
+            year_name = current_year.name.replace("/", "-") if current_year else "2025-2026"
+            total_due = FeeStructure.objects.filter(
+                class_name=student.class_name,
+                academic_year__in=[current_year.name if current_year else year_name, year_name],
+            ).aggregate(t=Sum('amount'))['t'] or Decimal('150000')
+
             existing_payments = Payment.objects.filter(student=student).count()
-            for _ in range(max(0, 5 - existing_payments)):
+            existing_total = Payment.objects.filter(student=student).aggregate(
+                t=Sum('amount')
+            )['t'] or Decimal('0')
+
+            for _ in range(max(0, 3 - existing_payments)):
+                budget = total_due * Decimal('0.5') - existing_total
+                if budget <= 10000:
+                    break
+                amt = Decimal(random.choice([a for a in NORMAL_AMOUNTS if a <= int(budget)]) if any(a <= int(budget) for a in NORMAL_AMOUNTS) else NORMAL_AMOUNTS[0])
                 Payment.objects.create(
                     student=student,
-                    amount=Decimal(random.choice(NORMAL_AMOUNTS)),
+                    amount=amt,
                     method=random.choice(["cash", "mobile_money", "bank_transfer"]),
                     reference=f"HIST-{random.randint(1000, 9999)}",
                 )
+                existing_total += amt
 
             # 1-2 anomalies per flagged student
             for _ in range(random.randint(1, 2)):

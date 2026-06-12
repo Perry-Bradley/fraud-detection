@@ -3,6 +3,7 @@ import random
 from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models import Sum
 from apps.students.models import Student
 from apps.fees.models import FeeStructure
 from apps.payments.models import Payment
@@ -56,14 +57,28 @@ class Command(BaseCommand):
 
         self.stdout.write("Seeding payments...")
         for s in students:
-            num_payments = random.randint(0, 3)
-            for _ in range(num_payments):
+            # Calculate actual fees for this student's class so we never overpay
+            total_due = FeeStructure.objects.filter(
+                class_name=s.class_name, academic_year=ACADEMIC_YEAR
+            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+
+            # Seed 0-2 partial payments that together don't exceed total_due
+            remaining = total_due
+            for _ in range(random.randint(0, 2)):
+                if remaining <= 0:
+                    break
+                # Pay a random partial installment (25-60% of what's still owed)
+                pct = Decimal(str(round(random.uniform(0.25, 0.60), 2)))
+                chunk = min((total_due * pct).quantize(Decimal('1000')), remaining)
+                if chunk <= 0:
+                    break
                 Payment.objects.create(
                     student=s,
-                    amount=Decimal(random.choice([20000, 30000, 50000, 75000])),
+                    amount=chunk,
                     method=random.choice(METHODS),
                     reference=f"REF-{random.randint(1000, 9999)}",
                 )
+                remaining -= chunk
 
         self.stdout.write(self.style.SUCCESS(
             f"Seeded {Student.objects.count()} students, "
